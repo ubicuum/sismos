@@ -1,0 +1,1289 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GEOSISM — Globo Sísmico 3D</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+  background: #08080e;
+  color: #e0e0e0;
+  overflow: hidden;
+  height: 100vh;
+}
+#filtros {
+  position: fixed; top: 175px; left: 28px; bottom: 28px; z-index: 100;
+  display: flex; flex-direction: column; gap: 6px;
+  pointer-events: none; user-select: none; width: 220px;
+  background: rgba(8,8,14,0.7); backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.04); border-radius: 10px;
+  padding: 10px;
+}
+#filtros .subtitle {
+  font-family: 'Orbitron', monospace; font-size: 11px; font-weight: 500;
+  letter-spacing: 4px;
+  color: rgba(0,243,255,0.55); margin-bottom: 6px;
+}
+#filtros .f-row {
+  display: flex; gap: 4px; pointer-events: auto;
+}
+#filtros .f-btn {
+  font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 600;
+  padding: 4px 10px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 6px; color: rgba(255,255,255,0.55); cursor: pointer;
+  transition: all 0.15s; letter-spacing: 0.3px;
+}
+#filtros .f-btn:hover { color: #fff; background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.1); }
+#filtros .f-btn.active { color: #00f3ff; background: rgba(0,243,255,0.06); border-color: rgba(0,243,255,0.15); }
+.f-label {
+  font-family: 'Orbitron', monospace; font-size: 7px; font-weight: 300;
+  letter-spacing: 3px; color: rgba(0,243,255,0.6); margin-top: 4px;
+}
+#stats-inline {
+  display: flex; gap: 12px; padding: 4px 0; pointer-events: auto;
+}
+#stats-inline .item { text-align: center; }
+#stats-inline .item .num { font-size: 13px; font-weight: 700; color: #00f3ff; }
+#stats-inline .item .lbl {
+  color: rgba(255,255,255,0.5); font-size: 7px;
+  text-transform: uppercase; letter-spacing: 1px; margin-top: 1px;
+}
+#visita-count {
+  font-family: 'Inter', sans-serif; font-size: 8px;
+  color: rgba(255,255,255,0.4); letter-spacing: 0.5px;
+  pointer-events: none; user-select: none; white-space: nowrap;
+  margin-left: auto;
+}
+#info-texto {
+  margin-top: 6px; pointer-events: auto; flex: 1; overflow-y: auto;
+  color: rgba(220,220,220,0.85); font-size: 9px; line-height: 1.5;
+  padding-right: 4px; min-height: 0;
+}
+#info-texto .info-titulo {
+  font-family: 'Orbitron', monospace; font-size: 10px; font-weight: 600;
+  color: rgba(0,243,255,0.75); letter-spacing: 2px; margin-bottom: 2px;
+}
+#info-texto .info-sub {
+  font-size: 10px; color: rgba(220,220,220,0.7); margin-bottom: 8px;
+}
+#info-texto .info-titulo2 {
+  font-size: 10px; font-weight: 600; color: rgba(220,220,220,0.85); margin: 6px 0 4px;
+}
+#info-texto p { margin-bottom: 4px; }
+#info-texto b { color: rgba(220,220,220,0.9); font-weight: 600; }
+#info-texto::-webkit-scrollbar { width: 2px; }
+#info-texto::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+#globe-container {
+  width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 0;
+}
+#globe-container canvas { display: block; }
+#labels-container {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  pointer-events: none; z-index: 1; overflow: hidden;
+}
+#logo {
+  position: fixed; top: 28px; left: 28px; z-index: 100;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  pointer-events: none; user-select: none; transform: scale(1.5); transform-origin: top left;
+}
+#logo-icon {
+  position: relative; width: 70px; height: 70px;
+  display: flex; justify-content: center; align-items: center;
+}
+#logo-icon .ring {
+  position: absolute; border: 4px solid #00f3ff; border-radius: 50%; opacity: 0.6;
+}
+#logo-icon .ring-1 { width: 70px; height: 70px; border-style: double; border-width: 4px; }
+#logo-icon .ring-2 { width: 50px; height: 50px; }
+#logo-icon .ring-3 { width: 32px; height: 32px; }
+#logo-icon .eye {
+  position: absolute; width: 14px; height: 14px;
+  background: #00f3ff; border-radius: 50%;
+}
+#logo-icon .eye::after {
+  content: ''; position: absolute; width: 4px; height: 4px;
+  background: #08080e; border-radius: 50%; top: 3px; left: 3px;
+}
+#logo-icon .node {
+  position: absolute; width: 6px; height: 6px;
+  background: #08080e; border: 2px solid #00f3ff; border-radius: 50%; z-index: 2;
+}
+#logo-icon .n1 { top: -1px; left: 15px; }
+#logo-icon .n2 { top: 11px; right: -1px; }
+#logo-icon .n3 { bottom: 9px; right: 2px; }
+#logo-icon .n4 { bottom: -1px; left: 14px; }
+#logo-icon .n5 { top: 15px; left: -1px; }
+#logo-icon .n6 { top: 5px; left: 13px; }
+#logo-icon .n7 { top: 22px; right: -2px; }
+#logo-icon .n8 { bottom: 5px; left: 26px; }
+#logo-icon .n9 { top: -1px; left: 10px; }
+#logo-icon .n10 { bottom: 6px; right: 0; }
+#logo-text {
+  font-family: 'Orbitron', monospace; font-size: 18px; font-weight: 700;
+  letter-spacing: 8px; color: #fff; text-transform: uppercase;
+  text-shadow: 0 0 30px rgba(0,243,255,0.15);
+}
+#logo small {
+  font-family: 'Orbitron', monospace; font-size: 6px; font-weight: 300;
+  letter-spacing: 4px; color: rgba(255,255,255,0.15);
+}
+#map-layers {
+  position: fixed; bottom: 72px; left: 50%; transform: translateX(-50%); z-index: 100;
+  display: flex; gap: 2px;
+  background: rgba(8,8,14,0.6); backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.04); border-radius: 8px;
+  padding: 4px;
+}
+#map-layers .layer-btn {
+  font-family: 'Inter', sans-serif; font-size: 9px; font-weight: 500;
+  padding: 4px 10px; background: transparent; border: none;
+  border-radius: 4px; color: rgba(255,255,255,0.55); cursor: pointer;
+  transition: all 0.15s;
+}
+#map-layers .layer-btn:hover { color: #fff; background: rgba(255,255,255,0.04); }
+#map-layers .layer-btn.active { color: #00f3ff; background: rgba(0,243,255,0.06); }
+#leyenda {
+  position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%); z-index: 100;
+  display: flex; gap: 18px; align-items: center;
+  background: rgba(8,8,14,0.6); backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.04); border-radius: 8px;
+  padding: 8px 18px; font-size: 10px;
+}
+#leyenda .row { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+#leyenda .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+#leyenda .dot.special { width: 9px; height: 9px; border: 2px solid #fbbf24; background: transparent; }
+#leyenda .line-dot { width: 14px; height: 2px; border-radius: 1px; flex-shrink: 0; }
+#placa-popup {
+  position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); z-index: 99;
+  max-width: 420px; padding: 12px 16px; border-radius: 8px;
+  background: rgba(8,8,14,0.3); backdrop-filter: blur(4px);
+  border: none;
+  color: rgba(200,200,200,0.85); font-size: 11px; line-height: 1.5;
+  pointer-events: none; opacity: 0; transition: opacity 0.3s;
+}
+#placa-popup.show { opacity: 1; }
+#side-panel {
+  position: fixed; top: 0; right: -420px; width: 400px; height: 100vh;
+  z-index: 200; background: rgba(8,8,14,0.92); backdrop-filter: blur(20px);
+  border-left: 1px solid rgba(255,255,255,0.06);
+  transition: right 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow-y: auto;
+}
+#side-panel.open { right: 0; }
+#side-panel .close {
+  position: absolute; top: 16px; right: 16px;
+  width: 32px; height: 32px; border: none;
+  background: rgba(255,255,255,0.06); border-radius: 50%;
+  color: rgba(255,255,255,0.5); font-size: 16px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+#side-panel .close:hover { background: rgba(255,255,255,0.1); color: #fff; }
+#side-panel .panel-inner { padding: 40px 28px 28px; }
+#side-panel .source-badge {
+  display: inline-block; font-size: 9px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 2px;
+  padding: 3px 10px; border-radius: 20px; margin-bottom: 14px;
+}
+#side-panel .source-badge.usgs {
+  background: rgba(0,243,255,0.08); color: #00f3ff;
+  border: 1px solid rgba(0,243,255,0.15);
+}
+#side-panel .source-badge.csn {
+  background: rgba(251,191,36,0.08); color: #fbbf24;
+  border: 1px solid rgba(251,191,36,0.15);
+}
+#side-panel .mag { font-size: 40px; font-weight: 800; line-height: 1; margin-bottom: 2px; }
+#side-panel .mag-type { font-size: 11px; color: rgba(255,255,255,0.55); margin-bottom: 14px; }
+#side-panel .place { font-size: 13px; color: rgba(255,255,255,0.8); margin-bottom: 18px; line-height: 1.4; }
+#side-panel .divider { height: 1px; background: rgba(255,255,255,0.06); margin: 14px 0; }
+#side-panel .field {
+  display: flex; justify-content: space-between;
+  padding: 4px 0; font-size: 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+#side-panel .field:last-child { border-bottom: none; }
+#side-panel .field .label { color: rgba(255,255,255,0.55); }
+#side-panel .field .value { color: #e0e0e0; font-weight: 500; text-align: right; }
+#side-panel .field .value.highlight { color: #00f3ff; }
+#side-panel .btn-link {
+  display: block; margin-top: 18px; text-align: center;
+  color: #00f3ff; text-decoration: none; font-size: 12px; font-weight: 500;
+  border: 1px solid rgba(0,243,255,0.15); border-radius: 6px;
+  padding: 10px; transition: all 0.2s;
+}
+#side-panel .btn-link:hover { background: rgba(0,243,255,0.06); border-color: rgba(0,243,255,0.3); }
+#side-panel::-webkit-scrollbar { width: 3px; }
+#side-panel::-webkit-scrollbar-track { background: transparent; }
+#side-panel::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+#glosario {
+  position: fixed; top: 175px; right: 28px; bottom: 28px; z-index: 100;
+  width: 220px; display: flex; flex-direction: column; gap: 2px;
+  background: rgba(8,8,14,0.7); backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.04); border-radius: 10px;
+  padding: 10px; overflow-y: auto;
+}
+#glosario::-webkit-scrollbar { width: 2px; }
+#glosario::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+.glosario-titulo {
+  font-family: 'Orbitron', monospace; font-size: 11px; font-weight: 500;
+  letter-spacing: 4px; color: rgba(0,243,255,0.55); margin-bottom: 4px;
+}
+.glosario-geosism {
+  font-family: 'Orbitron', monospace; font-size: 18px; font-weight: 700;
+  letter-spacing: 8px; color: #fff;
+  text-shadow: 0 0 30px rgba(0,243,255,0.15);
+}
+#glosario-logo {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 4px;
+}
+#glosario-logo-icon {
+  position: relative; width: 40px; height: 40px; flex-shrink: 0;
+  display: flex; justify-content: center; align-items: center;
+}
+#glosario-logo-icon .g-ring {
+  position: absolute; border: 2.5px solid #00f3ff; border-radius: 50%; opacity: 0.6;
+}
+#glosario-logo-icon .g-ring-1 { width: 40px; height: 40px; border-style: double; border-width: 2.5px; }
+#glosario-logo-icon .g-ring-2 { width: 28px; height: 28px; }
+#glosario-logo-icon .g-ring-3 { width: 18px; height: 18px; }
+#glosario-logo-icon .g-eye {
+  position: absolute; width: 8px; height: 8px;
+  background: #00f3ff; border-radius: 50%;
+}
+#glosario-logo-icon .g-eye::after {
+  content: ''; position: absolute; width: 2px; height: 2px;
+  background: #08080e; border-radius: 50%; top: 2px; left: 2px;
+}
+#glosario-logo-icon .g-node {
+  position: absolute; width: 3px; height: 3px;
+  background: #00f3ff; border-radius: 50%;
+}
+#glosario-logo-icon .gn1 { top: 0; left: 50%; transform: translateX(-50%); }
+#glosario-logo-icon .gn2 { top: 6px; right: 1px; }
+#glosario-logo-icon .gn3 { bottom: 6px; right: 1px; }
+#glosario-logo-icon .gn4 { bottom: 0; left: 50%; transform: translateX(-50%); }
+#glosario-logo-icon .gn5 { bottom: 6px; left: 1px; }
+#glosario-logo-icon .gn6 { top: 2px; left: 8px; }
+#glosario-logo-icon .gn7 { top: 14px; right: -1px; }
+#glosario-logo-icon .gn8 { bottom: 2px; left: 16px; }
+#glosario-logo-icon .gn9 { top: -1px; left: 6px; }
+#glosario-logo-icon .gn10 { bottom: 4px; right: 0; }
+.glosario-sub {
+  font-family: 'Orbitron', monospace; font-size: 7px; font-weight: 300;
+  letter-spacing: 4px; color: rgba(255,255,255,0.15); margin-bottom: 8px;
+}
+.glosario-item {
+  font-family: 'Inter', sans-serif; font-size: 9px; font-weight: 400;
+  color: rgba(255,255,255,0.55); padding: 4px 6px; cursor: pointer;
+  border-radius: 4px; transition: all 0.15s; border-left: 2px solid transparent;
+}
+.glosario-item:hover { color: #fff; background: rgba(255,255,255,0.04); border-left-color: rgba(0,243,255,0.3); }
+.glosario-item.active { color: #00f3ff; background: rgba(0,243,255,0.06); border-left-color: #00f3ff; }
+.glosario-item.kit { border-left-color: #fbbf24; color: rgba(255,255,255,0.65); }
+.glosario-item.kit:hover { border-left-color: #fbbf24; }
+.glosario-item.kit.active { color: #fbbf24; border-left-color: #fbbf24; }
+#glosario-popup {
+  position: fixed; z-index: 101;
+  width: 300px; max-height: 70vh; overflow-y: auto;
+  padding: 12px 16px; border-radius: 8px;
+  background: rgba(8,8,14,0.85); backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255,255,255,0.06);
+  color: rgba(220,220,220,0.9); font-size: 11px; line-height: 1.6;
+  pointer-events: auto; opacity: 0; visibility: hidden;
+  transition: opacity 0.2s, visibility 0.2s;
+}
+#glosario-popup.show { opacity: 1; visibility: visible; }
+#glosario-popup .g-titulo {
+  font-family: 'Orbitron', monospace; font-size: 10px; font-weight: 600;
+  color: rgba(0,243,255,0.7); letter-spacing: 2px; margin-bottom: 6px;
+}
+#glosario-popup .g-titulo.kit { color: #fbbf24; }
+#glosario-popup .g-def { margin-bottom: 6px; }
+#glosario-popup .g-def:last-child { margin-bottom: 0; }
+#glosario-popup .g-kit-item { padding-left: 12px; position: relative; }
+#glosario-popup .g-kit-item::before { content: '•'; position: absolute; left: 2px; color: #fbbf24; }
+#glosario-credito {
+  margin-top: auto; font-family: 'Inter', sans-serif; font-size: 6px;
+  color: rgba(255,255,255,0.25); letter-spacing: 0.2px; text-align: center;
+  pointer-events: none; user-select: none; padding-top: 6px;
+  border-top: 1px solid rgba(255,255,255,0.04); line-height: 1.5;
+}
+@media (max-width: 768px) {
+  #side-panel { width: 100vw; right: -100vw; }
+  #logo { top: 12px; left: 12px; }
+  #logo-icon { width: 40px; height: 40px; }
+  #logo-icon .ring-1 { width: 40px; height: 40px; }
+  #logo-icon .ring-2 { width: 30px; height: 30px; }
+  #logo-icon .ring-3 { width: 20px; height: 20px; }
+  #logo-text { font-size: 11px; letter-spacing: 4px; }
+}
+@media (max-width: 990px) {
+  #leyenda { bottom: 82px; padding: 4px 10px; gap: 6px; font-size: 7px; }
+  #map-layers { bottom: 136px; }
+  #placa-popup { bottom: 130px; max-width: 300px; font-size: 9px; padding: 8px 12px; }
+  #filtros {
+    top: auto; left: 0; bottom: 0; right: 0; width: 100%;
+    flex-direction: row; flex-wrap: wrap; align-items: center;
+    gap: 4px; padding: 6px 8px;
+    border-radius: 0; border-top: 1px solid rgba(255,255,255,0.06);
+    background: rgba(8,8,14,0.9); backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    max-height: 76px; overflow-y: auto;
+  }
+  #filtros .subtitle { display: none; }
+  #filtros .f-label { font-size: 6px; letter-spacing: 2px; margin: 0; }
+  #filtros .f-row { gap: 3px; }
+  #filtros .f-btn { font-size: 8px; padding: 2px 6px; }
+  #stats-inline { gap: 6px; padding: 0; }
+  #stats-inline .item .num { font-size: 9px; }
+  #stats-inline .item .lbl { font-size: 5px; }
+  #info-texto { display: none; }
+  #glosario { display: none; }
+  #glosario-popup { display: none; }
+}
+@media (max-width: 1100px) {
+  #glosario { display: none; }
+  #glosario-popup { display: none; }
+}
+</style>
+</head>
+<body>
+
+<div id="globe-container"></div>
+
+<div id="logo">
+  <div id="logo-icon">
+    <div class="ring ring-1">
+      <div class="node n1"></div><div class="node n2"></div>
+      <div class="node n3"></div><div class="node n4"></div><div class="node n5"></div>
+    </div>
+    <div class="ring ring-2">
+      <div class="node n6"></div><div class="node n7"></div><div class="node n8"></div>
+    </div>
+    <div class="ring ring-3">
+      <div class="node n9"></div><div class="node n10"></div>
+    </div>
+    <div class="eye"></div>
+  </div>
+  <div id="logo-text">GEOSISM</div>
+</div>
+
+<div id="filtros">
+  <div class="subtitle">Monitoreo Sísmico</div>
+  <div class="f-label">SISMOS POR HORA</div>
+  <div class="f-row">
+    <div class="f-btn" data-filter="range" data-value="hour">1H</div>
+    <div class="f-btn" data-filter="range" data-value="day">24H</div>
+    <div class="f-btn active" data-filter="range" data-value="7day">7D</div>
+    <div class="f-btn" data-filter="range" data-value="all">Todas</div>
+  </div>
+  <div class="f-label">MEDICIÓN</div>
+  <div class="f-row">
+    <div class="f-btn active" data-filter="mag" data-value="2.5">≥2.5</div>
+    <div class="f-btn" data-filter="mag" data-value="4.5">≥4.5</div>
+    <div class="f-btn" data-filter="mag" data-value="6.0">≥6.0</div>
+  </div>
+  <div class="f-label">GENERAL</div>
+  <div id="stats-inline">
+    <div class="item"><div class="num" id="s-count">—</div><div class="lbl">Sismos</div></div>
+    <div class="item"><div class="num" id="s-max">—</div><div class="lbl">M máx</div></div>
+    <div class="item"><div class="num" id="s-tsu">0</div><div class="lbl">Tsunami</div></div>
+  </div>
+  <div id="info-texto">
+    <div class="info-titulo">Bienvenidos a GEOSISM</div>
+    <div class="info-sub">El latido de la Tierra, en tiempo real.</div>
+    <p>¿Alguna vez te has preguntado qué tan activo es nuestro planeta en este preciso momento? GEOSISM es una plataforma interactiva diseñada para observar, comprender y rastrear la actividad sísmica global a medida que ocurre.</p>
+    <div class="info-titulo2">¿Qué puedes hacer en nuestra plataforma?</div>
+    <p><b>Explora el Globo Interactivo:</b> Visualiza un mapa tridimensional de la Tierra donde cada sismo se representa con un punto dinámico.</p>
+    <p><b>Código de Colores por Intensidad:</b> Identifica la magnitud de los terremotos al instante. Los colores varían según la intensidad del evento (desde sismos menores casi imperceptibles hasta grandes movimientos telúricos).</p>
+    <p><b>Información a un Solo Clic:</b> Haz clic sobre cualquier punto para desplegar un panel detallado con la hora exacta, profundidad, magnitud precisa y la ubicación geográfica del epicentro.</p>
+    <p><b>Capas de Placas Tectónicas:</b> Activa la vista de las fallas y placas tectónicas mundiales para entender el porqué de los sismos y observar cómo la actividad encaja perfectamente con las fronteras invisibles de nuestro planeta.</p>
+    <p><b>Una ventana a la ciencia de la Tierra:</b> Ya seas un apasionado de la geología, un estudiante o simplemente alguien curioso, nuestra web te ofrece una experiencia visual e informativa sin precedentes.</p>
+  </div>
+</div>
+
+<div id="map-layers">
+  <div class="layer-btn active" data-layer="satellite">Satélite</div>
+  <div class="layer-btn active" data-layer="tectonic">Placas</div>
+  <div class="layer-btn active" data-layer="borders">Fronteras</div>
+</div>
+
+<div id="leyenda">
+  <div class="row"><div class="dot" style="background:#4ade80"></div> &lt;3.0</div>
+  <div class="row"><div class="dot" style="background:#facc15"></div> 3–4.5</div>
+  <div class="row"><div class="dot" style="background:#fb923c"></div> 4.5–6</div>
+  <div class="row"><div class="dot" style="background:#ef4444"></div> 6+</div>
+  <div class="row"><div class="dot special"></div> CSN</div>
+  <div class="row" id="placa-info"><div class="line-dot" style="background:#ff6633"></div> Placa tectónica ⓘ</div>
+  <div id="visita-count"></div>
+</div>
+
+<div id="placa-popup">La tectónica de placas es la teoría que explica la estructura y dinámica de la superficie terrestre. Establece que la litosfera (la zona dinámica superior, la más externa y rígida de la Tierra) está fragmentada en una serie de placas que se desplazan sobre la astenosfera. Esta teoría también describe el movimiento de las placas, sus direcciones e interacciones y explica fenómenos como el cinturón de fuego del Pacífico, los arco-isla o las fosas oceánicas. — Wikipedia</div>
+
+<div id="side-panel">
+  <button class="close" id="panel-close">&times;</button>
+  <div class="panel-inner" id="panel-content"></div>
+</div>
+
+<div id="glosario">
+  <div id="glosario-logo">
+    <div id="glosario-logo-icon">
+      <div class="g-ring g-ring-1">
+        <div class="g-node gn1"></div><div class="g-node gn2"></div>
+        <div class="g-node gn3"></div><div class="g-node gn4"></div><div class="g-node gn5"></div>
+      </div>
+      <div class="g-ring g-ring-2">
+        <div class="g-node gn6"></div><div class="g-node gn7"></div><div class="g-node gn8"></div>
+      </div>
+      <div class="g-ring g-ring-3">
+        <div class="g-node gn9"></div><div class="g-node gn10"></div>
+      </div>
+      <div class="g-eye"></div>
+    </div>
+    <div class="glosario-geosism">GEOSISM</div>
+  </div>
+  <div class="glosario-sub">Monitoreo Sísmico</div>
+  <div class="glosario-titulo">GLOSARIO</div>
+  <div class="glosario-item" data-term="coordenadas">Coordenadas</div>
+  <div class="glosario-item" data-term="distancia">Distancia epicentral</div>
+  <div class="glosario-item" data-term="enjambre">Enjambre sísmico (swarm)</div>
+  <div class="glosario-item" data-term="epicentro">Epicentro</div>
+  <div class="glosario-item" data-term="mercalli">Escala Modificada de Mercalli</div>
+  <div class="glosario-item" data-term="richter">Escala de Richter</div>
+  <div class="glosario-item" data-term="falla">Falla</div>
+  <div class="glosario-item" data-term="subduccion">Subducción</div>
+  <div class="glosario-item" data-term="tsunami">Tsunami</div>
+  <div class="glosario-item kit" data-term="kit">KIT DE EMERGENCIA</div>
+  <div id="glosario-credito">Desarrollado por ABRAHAM SEGUEL VORPAHL,<br>sobreviviente del terremoto de Valdivia Chile.<br>Fuentes:<br>Servicio Geológico de Estados Unidos<br>Centro Sismológico Nacional U. de Chile<br>Iquique Chile</div>
+</div>
+<div id="glosario-popup"></div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+import { Line2 } from 'three/addons/lines/Line2.js';
+import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
+import { LineGeometry } from 'three/addons/lines/LineGeometry.js';
+
+var getHex = function(mag) {
+  if (mag >= 6) return 0xef4444;
+  if (mag >= 4.5) return 0xfb923c;
+  if (mag >= 3) return 0xfacc15;
+  return 0x4ade80;
+};
+var getStyle = function(mag) {
+  if (mag >= 6) return '#ef4444';
+  if (mag >= 4.5) return '#fb923c';
+  if (mag >= 3) return '#facc15';
+  return '#4ade80';
+};
+
+// Scene
+var scene = new THREE.Scene();
+scene.background = new THREE.Color(0x08080e);
+
+var camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+camera.position.set(0, 40, 280);
+
+var renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+document.getElementById('globe-container').appendChild(renderer.domElement);
+
+// CSS2D renderer for labels
+var labelRenderer = new CSS2DRenderer();
+labelRenderer.setSize(window.innerWidth, window.innerHeight);
+labelRenderer.domElement.style.position = 'absolute';
+labelRenderer.domElement.style.top = '0';
+labelRenderer.domElement.style.left = '0';
+labelRenderer.domElement.style.pointerEvents = 'none';
+labelRenderer.domElement.style.zIndex = '1';
+document.getElementById('globe-container').appendChild(labelRenderer.domElement);
+
+// Controls
+var controls = new OrbitControls(camera, renderer.domElement);
+controls.autoRotate = true;
+controls.autoRotateSpeed = 0.7;
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.minDistance = 140;
+controls.maxDistance = 500;
+controls.target.set(0, 0, 0);
+var rotTimer;
+document.addEventListener('pointerdown', function() {
+  controls.autoRotate = false;
+  clearTimeout(rotTimer);
+  rotTimer = setTimeout(function() { controls.autoRotate = true; }, 5000);
+});
+
+// Lights — bright and even, no harsh reflections
+scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+var sun = new THREE.DirectionalLight(0xffffff, 2.0);
+sun.position.set(1, 0.5, 0.8);
+scene.add(sun);
+var fill = new THREE.DirectionalLight(0x88bbff, 0.8);
+fill.position.set(-0.6, -0.2, -0.8);
+scene.add(fill);
+var back = new THREE.DirectionalLight(0x88aacc, 0.3);
+back.position.set(0, 0, -1);
+scene.add(back);
+
+// Earth
+var R = 100;
+var TEX_URLS = [
+  'https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg',
+  'https://upload.wikimedia.org/wikipedia/commons/thumb/2/23/Blue_Marble_2002.png/1280px-Blue_Marble_2002.png',
+  'https://www.solarsystemscope.com/textures/download/2k_earth_daymap.jpg'
+];
+
+function makeEarthTex() {
+  var W = 1024, H = 512;
+  var c = document.createElement('canvas');
+  c.width = W; c.height = H;
+  var ctx = c.getContext('2d');
+  // Ocean
+  var grad = ctx.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0, '#0a2a5a');
+  grad.addColorStop(0.5, '#0d3d6b');
+  grad.addColorStop(1, '#0a2a5a');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+  // Land fill
+  ctx.fillStyle = '#3d7a3d';
+  // Each continent: array of [lng, lat] pairs, converted to pixel coords
+  var ll2xy = function(lng, lat) { return [(lng+180)/360*W, (90-lat)/180*H]; };
+  var conts = [
+    // North America
+    [[-168,66],[-165,60],[-152,58],[-140,60],[-128,58],[-120,55],[-118,50],[-124,45],[-122,37],[-118,33],[-115,30],
+     [-105,25],[-98,20],[-90,18],[-88,14],[-82,10],[-80,8],[-78,10],[-80,15],[-82,22],[-85,25],[-90,28],[-98,30],
+     [-105,32],[-110,32],[-115,35],[-120,38],[-124,40],[-125,45],[-126,55],[-122,60],[-130,62],[-140,62],[-150,60],
+     [-160,62],[-165,65]],
+    // South America
+    [[-80,10],[-75,8],[-68,8],[-60,5],[-52,2],[-50,-2],[-48,-5],[-48,-15],[-50,-22],[-53,-28],[-57,-33],[-60,-35],
+     [-62,-38],[-65,-40],[-68,-42],[-70,-44],[-72,-50],[-75,-55],[-72,-50],[-68,-42],[-65,-38],[-63,-35],[-60,-30],
+     [-58,-25],[-57,-20],[-58,-10],[-60,-5],[-65,0],[-70,2],[-75,5],[-78,8],[-80,10]],
+    // Europe
+    [[-10,58],[-5,55],[0,52],[2,48],[5,44],[8,42],[10,44],[12,46],[15,45],[18,44],[20,46],[22,48],[25,50],[28,52],
+     [25,55],[22,56],[20,58],[18,60],[15,62],[12,64],[10,65],[8,64],[5,62],[0,60],[-5,58]],
+    // Africa
+    [[-17,35],[-15,30],[-10,28],[-5,25],[-2,20],[0,15],[5,10],[10,5],[12,0],[15,-5],[18,-10],[20,-15],[22,-20],
+     [25,-25],[28,-30],[30,-32],[32,-34],[35,-34],[38,-33],[40,-30],[42,-25],[44,-20],[45,-15],[43,-10],[40,-5],
+     [38,0],[35,5],[33,10],[30,15],[28,20],[25,25],[22,28],[18,30],[15,32],[12,33],[10,35],[5,37],[0,37],[-5,36],
+     [-10,35],[-15,35]],
+    // Russia / North Asia
+    [[20,70],[30,68],[35,65],[40,60],[45,55],[50,52],[55,50],[60,48],[65,47],[70,45],[75,42],[80,40],[85,42],[90,45],
+     [95,48],[100,50],[105,52],[110,55],[115,58],[120,60],[125,62],[130,65],[135,68],[140,70],[145,72],[150,68],
+     [145,62],[140,58],[135,55],[130,52],[125,50],[120,48],[115,47],[110,45],[105,43],[100,42],[95,40],[90,42],
+     [85,44],[80,45],[75,47],[70,48],[65,50],[60,52],[55,54],[50,55],[45,55],[40,58],[35,60],[30,62],[25,65],
+     [20,68]],
+    // China / East Asia
+    [[80,48],[82,45],[85,42],[88,40],[90,38],[92,35],[95,30],[98,28],[100,25],[102,22],[105,20],[108,18],[110,15],
+     [112,18],[115,20],[118,22],[120,25],[122,30],[120,35],[118,38],[115,40],[112,42],[110,45],[108,48],[105,50],
+     [100,50],[95,48],[90,47],[85,48],[80,48]],
+    // India
+    [[68,30],[70,25],[72,20],[75,15],[78,10],[80,8],[82,10],[85,15],[87,20],[88,25],[85,28],[82,30],[78,32],[75,32],
+     [72,30],[70,30]],
+    // SE Asia + Indonesia
+    [[95,25],[98,22],[100,20],[102,18],[105,17],[107,15],[110,12],[112,10],[115,8],[118,5],[120,0],[118,-2],
+     [115,-5],[112,-8],[110,-8],[108,-6],[106,-5],[104,-8],[102,-5],[100,-2],[98,0],[96,2],[95,5],[97,8],
+     [100,10],[102,12],[105,15],[103,18],[100,20],[98,22],[95,24]],
+    // Australia
+    [[113,-12],[115,-15],[118,-18],[120,-20],[122,-22],[125,-25],[128,-28],[130,-30],[132,-32],[135,-35],
+     [138,-38],[140,-38],[142,-37],[145,-35],[147,-33],[148,-30],[150,-28],[150,-25],[148,-22],[145,-20],
+     [142,-18],[140,-16],[138,-15],[135,-14],[132,-12],[130,-12],[128,-13],[125,-12],[122,-11],[118,-11],
+     [115,-12]],
+    // Greenland
+    [[-55,82],[-52,78],[-48,76],[-42,72],[-38,70],[-35,68],[-32,70],[-30,72],[-28,75],[-25,78],[-30,82],
+     [-35,83],[-40,82],[-45,82],[-50,82],[-55,82]],
+    // Antarctica (simplified strip)
+    [[-180,-65],[-170,-65],[-160,-65],[-150,-65],[-140,-65],[-130,-65],[-120,-65],[-110,-65],[-100,-65],
+     [-90,-65],[-80,-65],[-70,-65],[-60,-65],[-50,-65],[-40,-65],[-30,-65],[-20,-65],[-10,-65],[0,-65],
+     [10,-65],[20,-65],[30,-65],[40,-65],[50,-65],[60,-65],[70,-65],[80,-65],[90,-65],[100,-65],[110,-65],
+     [120,-65],[130,-65],[140,-65],[150,-65],[160,-65],[170,-65],[180,-65]],
+  ];
+  conts.forEach(function(pts) {
+    ctx.beginPath();
+    pts.forEach(function(p, i) {
+      var xy = ll2xy(p[0], p[1]);
+      if (i === 0) ctx.moveTo(xy[0], xy[1]);
+      else ctx.lineTo(xy[0], xy[1]);
+    });
+    ctx.closePath();
+    ctx.fill();
+  });
+  // Add some green/brown variation
+  ctx.fillStyle = '#4a8a3a';
+  conts.forEach(function(pts) {
+    var cx = 0, cy = 0;
+    pts.forEach(function(p) { var xy = ll2xy(p[0], p[1]); cx += xy[0]; cy += xy[1]; });
+    cx /= pts.length; cy /= pts.length;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, 60, 40, 0, 0, Math.PI*2);
+    ctx.fill();
+  });
+  return c;
+}
+var extTex = new THREE.CanvasTexture(makeEarthTex());
+
+var earthMat = new THREE.MeshStandardMaterial({
+  map: extTex,
+  color: 0xffffff,
+  roughness: 1.0,
+  metalness: 0.0,
+  transparent: false,
+  side: THREE.FrontSide,
+  depthWrite: true,
+});
+var earthMesh = new THREE.Mesh(new THREE.SphereGeometry(R, 64, 64), earthMat);
+earthMesh.geometry.computeVertexNormals();
+scene.add(earthMesh);
+
+// Try to load real texture as upgrade
+var texLoader = new THREE.TextureLoader();
+var texIdx = 0;
+function tryLoadTex() {
+  if (texIdx >= TEX_URLS.length) return;
+  var url = TEX_URLS[texIdx++];
+  texLoader.load(url, function(t) {
+    t.anisotropy = Math.min(renderer.capabilities.getMaxAnisotropy() || 4, 4);
+    earthMat.map = t;
+    earthMat.needsUpdate = true;
+  }, undefined, function() {
+    setTimeout(tryLoadTex, 100);
+  });
+}
+tryLoadTex();
+
+tryLoadTex();
+
+// City sprite labels (3D coplanar to ground)
+
+
+
+
+
+// City sprite labels (3D coplanar to ground)
+var cities = [
+  { name: 'Santiago', lat: -33.45, lng: -70.67 }, { name: 'Buenos Aires', lat: -34.60, lng: -58.38 },
+  { name: 'Lima', lat: -12.05, lng: -77.03 }, { name: 'Bogotá', lat: 4.71, lng: -74.07 },
+  { name: 'México DF', lat: 19.43, lng: -99.13 }, { name: 'Nueva York', lat: 40.71, lng: -74.01 },
+  { name: 'São Paulo', lat: -23.55, lng: -46.63 }, { name: 'Londres', lat: 51.51, lng: -0.13 },
+  { name: 'Madrid', lat: 40.42, lng: -3.70 }, { name: 'París', lat: 48.86, lng: 2.35 },
+  { name: 'Berlín', lat: 52.52, lng: 13.41 }, { name: 'Moscú', lat: 55.76, lng: 37.62 },
+  { name: 'Pekín', lat: 39.91, lng: 116.40 }, { name: 'Tokio', lat: 35.68, lng: 139.69 },
+  { name: 'Seúl', lat: 37.57, lng: 126.98 }, { name: 'El Cairo', lat: 30.04, lng: 31.24 },
+  { name: 'Sídney', lat: -33.87, lng: 151.21 }, { name: 'Los Ángeles', lat: 34.05, lng: -118.24 },
+  { name: 'Miami', lat: 25.76, lng: -80.19 }, { name: 'Shanghái', lat: 31.23, lng: 121.47 },
+  { name: 'Estambul', lat: 41.01, lng: 28.98 }, { name: 'Dubái', lat: 25.20, lng: 55.27 },
+  { name: 'Singapur', lat: 1.35, lng: 103.82 }, { name: 'Caracas', lat: 10.48, lng: -66.90 },
+  { name: 'Nueva Delhi', lat: 28.61, lng: 77.23 }, { name: 'Bangkok', lat: 13.76, lng: 100.50 },
+  { name: 'Johannesburgo', lat: -26.20, lng: 28.05 }, { name: 'Río de Janeiro', lat: -22.91, lng: -43.17 },
+  { name: 'Casablanca', lat: 33.57, lng: -7.58 }, { name: 'Roma', lat: 41.90, lng: 12.50 },
+  { name: 'Viena', lat: 48.21, lng: 16.37 }, { name: 'Varsovia', lat: 52.23, lng: 21.01 },
+  { name: 'Estocolmo', lat: 59.33, lng: 18.07 }, { name: 'Atenas', lat: 37.98, lng: 23.73 },
+  { name: 'Lisboa', lat: 38.72, lng: -9.13 }, { name: 'Dublín', lat: 53.35, lng: -6.26 },
+  { name: 'Toronto', lat: 43.65, lng: -79.38 }, { name: 'La Habana', lat: 23.13, lng: -82.38 },
+  { name: 'Santo Domingo', lat: 18.49, lng: -69.93 }, { name: 'San Juan', lat: 18.47, lng: -66.11 },
+  { name: 'Yakarta', lat: -6.21, lng: 106.85 }, { name: 'Manila', lat: 14.60, lng: 120.98 },
+  { name: 'Hong Kong', lat: 22.32, lng: 114.17 }, { name: 'Nairobi', lat: -1.29, lng: 36.82 },
+  { name: 'Lagos', lat: 6.52, lng: 3.38 }, { name: 'Kinshasa', lat: -4.33, lng: 15.32 },
+  { name: 'Perth', lat: -31.95, lng: 115.86 }, { name: 'Auckland', lat: -36.85, lng: 174.76 },
+];
+
+function latLngToPos(lat, lng, r) {
+  var phi = (90 - lat) * Math.PI / 180;
+  var theta = (lng + 180) * Math.PI / 180;
+  return new THREE.Vector3(
+    -r * Math.sin(phi) * Math.cos(theta),
+    r * Math.cos(phi),
+    r * Math.sin(phi) * Math.sin(theta)
+  );
+}
+
+var cityLabels = [];
+cities.forEach(function(c) {
+  var pos = latLngToPos(c.lat, c.lng, R * 1.005);
+  var div = document.createElement('div');
+  div.textContent = c.name;
+  div.style.color = 'rgba(255,255,255,0.8)';
+  div.style.fontSize = '8px';
+  div.style.fontFamily = 'Inter, sans-serif';
+  div.style.fontWeight = '500';
+  div.style.textShadow = '0 0 8px rgba(0,0,0,0.95)';
+  div.style.whiteSpace = 'nowrap';
+  div.style.letterSpacing = '0.3px';
+  var label = new CSS2DObject(div);
+  label.position.copy(pos);
+  label.userData.normal = pos.clone().normalize();
+  scene.add(label);
+  cityLabels.push(label);
+});
+
+// Country labels
+var countryNames = [
+  {n:'Chile',la:-35.675,lo:-71.542},{n:'Argentina',la:-38.416,lo:-63.616},{n:'Bolivia',la:-16.290,lo:-63.588},
+  {n:'Perú',la:-9.190,lo:-75.015},{n:'Ecuador',la:-1.831,lo:-78.183},{n:'Colombia',la:4.570,lo:-74.297},
+  {n:'Venezuela',la:6.423,lo:-66.589},{n:'Brasil',la:-14.235,lo:-51.925},{n:'Paraguay',la:-23.442,lo:-58.443},
+  {n:'Uruguay',la:-32.522,lo:-55.765},{n:'México',la:23.634,lo:-102.552},{n:'Guatemala',la:15.783,lo:-90.230},
+  {n:'Honduras',la:15.199,lo:-86.241},{n:'El Salvador',la:13.794,lo:-88.896},{n:'Nicaragua',la:12.865,lo:-85.207},
+  {n:'Costa Rica',la:9.748,lo:-83.753},{n:'Panamá',la:8.537,lo:-80.782},{n:'Cuba',la:21.521,lo:-77.781},
+  {n:'Jamaica',la:18.109,lo:-77.297},{n:'Haití',la:18.971,lo:-72.285},{n:'República Dominicana',la:18.735,lo:-70.162},
+  {n:'Puerto Rico',la:18.220,lo:-66.590},{n:'Bahamas',la:25.034,lo:-77.396},
+  {n:'Estados Unidos',la:37.090,lo:-95.712},{n:'Canadá',la:56.130,lo:-106.346},{n:'Groenlandia',la:71.706,lo:-42.604},
+  {n:'España',la:40.463,lo:-3.749},{n:'Portugal',la:39.399,lo:-8.224},{n:'Francia',la:46.603,lo:1.888},
+  {n:'Reino Unido',la:55.378,lo:-3.435},{n:'Irlanda',la:53.142,lo:-7.692},{n:'Islandia',la:64.931,lo:-18.833},
+  {n:'Alemania',la:51.165,lo:10.451},{n:'Polonia',la:51.919,lo:19.145},{n:'Austria',la:47.516,lo:14.550},
+  {n:'Suiza',la:46.818,lo:8.227},{n:'Italia',la:41.871,lo:12.567},{n:'Países Bajos',la:52.132,lo:5.291},
+  {n:'Bélgica',la:50.850,lo:4.351},{n:'Dinamarca',la:56.263,lo:9.501},{n:'Noruega',la:60.472,lo:8.468},
+  {n:'Suecia',la:60.128,lo:18.643},{n:'Finlandia',la:61.924,lo:25.748},{n:'Ucrania',la:48.379,lo:31.165},
+  {n:'Rumania',la:45.943,lo:24.966},{n:'Bulgaria',la:42.733,lo:25.485},{n:'Grecia',la:39.074,lo:21.824},
+  {n:'Turquía',la:38.963,lo:35.243},{n:'Rusia',la:61.524,lo:105.318},
+  {n:'Marruecos',la:31.791,lo:-7.092},{n:'Argelia',la:28.033,lo:1.659},{n:'Túnez',la:33.886,lo:9.537},
+  {n:'Libia',la:26.335,lo:17.228},{n:'Egipto',la:26.820,lo:30.802},{n:'Nigeria',la:9.081,lo:8.675},
+  {n:'Ghana',la:7.946,lo:-1.023},{n:'Senegal',la:14.497,lo:-14.452},{n:'Etiopía',la:9.145,lo:40.489},
+  {n:'Kenia',la:-0.023,lo:37.906},{n:'Tanzania',la:-6.369,lo:34.888},{n:'Sudáfrica',la:-30.559,lo:22.937},
+  {n:'Angola',la:-11.202,lo:17.873},{n:'Mozambique',la:-18.665,lo:35.529},{n:'Madagascar',la:-18.766,lo:46.869},
+  {n:'República Democrática del Congo',la:-4.038,lo:21.758},
+  {n:'Irán',la:32.427,lo:53.688},{n:'Irak',la:33.223,lo:43.679},{n:'Arabia Saudita',la:23.885,lo:45.079},
+  {n:'Yemen',la:15.552,lo:48.516},{n:'Omán',la:21.512,lo:55.923},{n:'Afganistán',la:33.939,lo:67.709},
+  {n:'Pakistán',la:30.375,lo:69.345},{n:'India',la:20.593,lo:78.962},{n:'Nepal',la:28.394,lo:84.124},
+  {n:'Bangladesh',la:23.684,lo:90.356},{n:'Myanmar',la:21.916,lo:95.956},{n:'Tailandia',la:15.870,lo:100.992},
+  {n:'Laos',la:19.856,lo:102.495},{n:'Camboya',la:12.565,lo:104.990},{n:'Vietnam',la:14.058,lo:108.277},
+  {n:'Malasia',la:4.210,lo:101.975},{n:'Indonesia',la:-0.789,lo:113.921},{n:'Filipinas',la:12.879,lo:121.774},
+  {n:'China',la:35.861,lo:104.195},{n:'Mongolia',la:46.862,lo:103.846},{n:'Japón',la:36.204,lo:138.252},
+  {n:'Corea del Sur',la:35.907,lo:127.766},{n:'Corea del Norte',la:40.339,lo:127.510},{n:'Taiwán',la:23.697,lo:120.960},
+  {n:'Australia',la:-25.274,lo:133.775},{n:'Nueva Zelanda',la:-40.900,lo:174.885},
+  {n:'Papúa Nueva Guinea',la:-6.314,lo:143.955}
+];
+var countryLabels = [];
+countryNames.forEach(function(c) {
+  var pos = latLngToPos(c.la, c.lo, R * 1.003);
+  var div = document.createElement('div');
+  div.textContent = c.n;
+  div.style.color = 'rgba(255,255,255,0.5)';
+  div.style.fontSize = '7px';
+  div.style.fontFamily = 'Arial, sans-serif';
+  div.style.fontWeight = '400';
+  div.style.textTransform = 'uppercase';
+  div.style.letterSpacing = '0.5px';
+  div.style.textShadow = '0 0 6px rgba(0,0,0,0.9)';
+  div.style.whiteSpace = 'nowrap';
+  div.style.pointerEvents = 'none';
+  var label = new CSS2DObject(div);
+  label.position.copy(pos);
+  label.userData.normal = pos.clone().normalize();
+  scene.add(label);
+  countryLabels.push(label);
+});
+
+// Groups for toggling
+var borderGroup = new THREE.Group();
+scene.add(borderGroup);
+var plateGroup = new THREE.Group();
+scene.add(plateGroup);
+
+var lineRes = new THREE.Vector2(window.innerWidth, window.innerHeight);
+
+// Country borders — neon cyan
+var borderMat = new LineMaterial({ color: 0x44ddff, linewidth: 2, resolution: lineRes, transparent: true, opacity: 0.5, depthTest: true, depthWrite: false });
+var BORDER_URL = 'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_admin_0_boundary_lines_land.geojson';
+fetch(BORDER_URL)
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (!data.features) return;
+    for (var f = 0; f < data.features.length; f++) {
+      var geom = data.features[f].geometry;
+      if (!geom) continue;
+      var coords = geom.type === 'MultiLineString' ? geom.coordinates : [geom.coordinates];
+      for (var c = 0; c < coords.length; c++) {
+        var pos = [];
+        for (var p = 0; p < coords[c].length; p++) {
+          var lng = coords[c][p][0], lat = coords[c][p][1];
+          var v = latLngToPos(lat, lng, R + 0.1);
+          pos.push(v.x, v.y, v.z);
+        }
+        if (pos.length >= 6) {
+          var g = new LineGeometry();
+          g.setPositions(pos);
+          borderGroup.add(new Line2(g, borderMat));
+        }
+      }
+    }
+  })
+  .catch(function() {});
+
+// Tectonic plates — neon orange
+var plateMat = new LineMaterial({ color: 0xff6633, linewidth: 3, resolution: lineRes, transparent: true, opacity: 0.6, depthTest: true, depthWrite: false });
+var plateLabels = [];
+fetch('https://raw.githubusercontent.com/fraxen/tectonicplates/master/GeoJSON/PB2002_boundaries.json')
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (!data.features) return;
+    for (var f = 0; f < data.features.length; f++) {
+      var geom = data.features[f].geometry;
+      if (!geom) continue;
+      var coords = geom.type === 'MultiLineString' ? geom.coordinates : [geom.coordinates];
+      for (var c = 0; c < coords.length; c++) {
+        var pos = [];
+        for (var p = 0; p < coords[c].length; p++) {
+          var lng = coords[c][p][0], lat = coords[c][p][1];
+          var v = latLngToPos(lat, lng, R + 0.15);
+          pos.push(v.x, v.y, v.z);
+        }
+        if (pos.length >= 6) {
+          var g = new LineGeometry();
+          g.setPositions(pos);
+          plateGroup.add(new Line2(g, plateMat));
+        }
+      }
+    }
+  })
+  .catch(function() {});
+
+// Plate name labels from PB2002 plates polygon data
+fetch('https://raw.githubusercontent.com/fraxen/tectonicplates/master/GeoJSON/PB2002_plates.json')
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (!data.features) return;
+    data.features.forEach(function(f) {
+      var name = (f.properties || {}).PlateName;
+      if (!name || name === 'Antarctica') return;
+      var geom = f.geometry;
+      if (!geom || !geom.coordinates) return;
+      var coords;
+      if (geom.type === 'Polygon') coords = geom.coordinates[0];
+      else if (geom.type === 'MultiPolygon') coords = geom.coordinates[0][0];
+      else return;
+      var sumLat = 0, sumLng = 0, count = 0;
+      for (var i = 0; i < coords.length; i++) {
+        var lng = coords[i][0], lat = coords[i][1];
+        if (lng < -170 || lng > 170) continue;
+        sumLng += lng; sumLat += lat; count++;
+      }
+      if (count === 0) return;
+      var clat = sumLat / count, clng = sumLng / count;
+      var pos = latLngToPos(clat, clng, R * 1.006);
+      var div = document.createElement('div');
+      div.textContent = name.indexOf('Placa') === -1 ? 'Placa ' + name : name;
+      div.style.color = 'rgba(255,102,51,0.55)';
+      div.style.fontSize = '8px';
+      div.style.fontFamily = 'Arial, sans-serif';
+      div.style.fontWeight = '600';
+      div.style.letterSpacing = '0.5px';
+      div.style.textShadow = '0 0 4px rgba(0,0,0,0.9)';
+      div.style.whiteSpace = 'nowrap';
+      div.style.pointerEvents = 'none';
+      var label = new CSS2DObject(div);
+      label.position.copy(pos);
+      label.userData.normal = pos.clone().normalize();
+      plateGroup.add(label);
+      plateLabels.push(label);
+    });
+  })
+  .catch(function() {});
+
+function makeCircle(radius, segments) {
+  var geo = new THREE.BufferGeometry();
+  var verts = [], idx = [];
+  verts.push(0, 0, 0);
+  for (var i = 0; i <= segments; i++) {
+    var a = (i / segments) * Math.PI * 2;
+    verts.push(Math.cos(a) * radius, Math.sin(a) * radius, 0);
+  }
+  for (var i = 1; i <= segments; i++) {
+    idx.push(0, i, i % segments + 1);
+  }
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
+  geo.setIndex(idx);
+  geo.computeVertexNormals();
+  return geo;
+}
+var _circleGeo = makeCircle(1, 16);
+var _alignQ = new THREE.Quaternion();
+var _zAxis = new THREE.Vector3(0, 0, 1);
+
+// Quake group
+var quakeGroup = new THREE.Group();
+scene.add(quakeGroup);
+var quakeData = [];
+
+
+function buildQuakes(points) {
+  while (quakeGroup.children.length) {
+    var c = quakeGroup.children[0];
+    if (c.material) c.material.dispose();
+    quakeGroup.remove(c);
+  }
+  quakeData = points;
+
+  for (var i = 0; i < points.length; i++) {
+    var d = points[i];
+    var mag = d.mag || 0;
+    var hex = getHex(mag);
+    var isCSN = d.source === 'csn';
+    var pos = latLngToPos(d.lat, d.lng, R + 0.3);
+    var norm = pos.clone().normalize();
+
+    // Flat painted circle — coplanar to earth surface
+    var s = 0.25 + mag * 0.12;
+    var mat = new THREE.MeshBasicMaterial({
+      color: hex, side: THREE.DoubleSide, depthWrite: true, depthTest: true,
+    });
+    var mesh = new THREE.Mesh(_circleGeo, mat);
+    mesh.position.copy(pos);
+    _alignQ.setFromUnitVectors(_zAxis, norm);
+    mesh.quaternion.copy(_alignQ);
+    mesh.scale.set(s, s, s);
+    mesh.userData.normal = norm;
+    mesh.userData.feature = d._feature;
+    mesh.renderOrder = 1;
+    quakeGroup.add(mesh);
+
+    // CSN golden ring
+    if (isCSN) {
+      var csnMat = new THREE.MeshBasicMaterial({
+        color: 0xfbbf24, side: THREE.DoubleSide, depthWrite: true, depthTest: true,
+      });
+      var csnM = new THREE.Mesh(_circleGeo, csnMat);
+      csnM.position.copy(pos);
+      _alignQ.setFromUnitVectors(_zAxis, norm);
+      csnM.quaternion.copy(_alignQ);
+      csnM.scale.set(s + 0.2, s + 0.2, s + 0.2);
+      csnM.userData.normal = norm;
+      csnM.renderOrder = 1;
+      quakeGroup.add(csnM);
+    }
+  }
+}
+
+// Click detection
+var raycaster = new THREE.Raycaster();
+var mouse = new THREE.Vector2();
+renderer.domElement.addEventListener('click', function(ev) {
+  var rect = renderer.domElement.getBoundingClientRect();
+  mouse.x = ((ev.clientX - rect.left) / rect.width) * 2 - 1;
+  mouse.y = -((ev.clientY - rect.top) / rect.height) * 2 + 1;
+  raycaster.setFromCamera(mouse, camera);
+  var targets = [];
+  quakeGroup.children.forEach(function(c) {
+    if (c.isMesh && c.userData.feature) targets.push(c);
+  });
+  var hits = raycaster.intersectObjects(targets);
+  if (hits.length > 0 && hits[0].object.userData.feature) {
+    showPanel(hits[0].object.userData.feature);
+  }
+});
+
+// Resize
+window.addEventListener('resize', function() {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  labelRenderer.setSize(window.innerWidth, window.innerHeight);
+  lineRes.set(window.innerWidth, window.innerHeight);
+  borderMat.resolution.copy(lineRes);
+  plateMat.resolution.copy(lineRes);
+});
+
+var _camDir = new THREE.Vector3();
+function animate() {
+  requestAnimationFrame(animate);
+  controls.update();
+
+  _camDir.copy(camera.position).normalize();
+  for (var i = 0; i < cityLabels.length; i++) {
+    var lbl = cityLabels[i];
+    lbl.visible = lbl.userData.normal.dot(_camDir) > 0;
+  }
+  for (var i = 0; i < countryLabels.length; i++) {
+    var lbl = countryLabels[i];
+    lbl.visible = lbl.userData.normal.dot(_camDir) > 0;
+  }
+  for (var i = 0; i < plateLabels.length; i++) {
+    var lbl = plateLabels[i];
+    lbl.visible = lbl.userData.normal.dot(_camDir) > 0;
+  }
+  for (var i = 0; i < quakeGroup.children.length; i++) {
+    var q = quakeGroup.children[i];
+    if (q.userData.normal) {
+      q.visible = q.userData.normal.dot(_camDir) > 0;
+    }
+  }
+
+  labelRenderer.render(scene, camera);
+  renderer.render(scene, camera);
+}
+animate();
+
+// --- Data ---
+var allData = [];
+var range = '7day';
+var minMag = 2.5;
+var intervalId;
+
+function fmtUTC(ts) { return new Date(ts).toUTCString().replace('GMT', 'UTC'); }
+function fmtLocal(ts) { return new Date(ts).toLocaleString('es-CL', { timeZone: 'America/Santiago' }); }
+
+function fetchUSGS() {
+  var st = new Date();
+  if (range === 'hour') st.setHours(st.getHours() - 1);
+  else if (range === 'day') st.setDate(st.getDate() - 1);
+  else if (range === '7day') st.setDate(st.getDate() - 7);
+  else if (range === 'all') st = new Date('2000-01-01');
+  var start = st.toISOString();
+  var url = 'https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&starttime=' + start + '&minmagnitude=' + minMag + '&orderby=time&limit=500';
+  return fetch(url).then(function(r) { return r.json(); }).then(function(d) { return d.features || []; });
+}
+
+function fetchCSN() {
+  return fetch('https://api.boostr.cl/earthquakes.json')
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d.status !== 'success' || !d.data) return [];
+      var ev = d.data;
+      var lat = parseFloat(ev.latitude);
+      var lng = parseFloat(ev.longitude);
+      if (isNaN(lat) || isNaN(lng)) return [];
+      var mag = parseFloat(ev.magnitude) || 0;
+      var depth = parseInt(ev.depth) || 0;
+      var ts = new Date(ev.date + 'T' + ev.hour + '-04:00').getTime();
+      return [{
+        type: 'Feature',
+        properties: {
+          mag: mag, place: ev.place, time: ts, updated: ts,
+          url: ev.info, felt: null, cdi: null, mmi: null,
+          alert: null, tsunami: 0, sig: Math.round(mag * 100),
+          net: 'csn', code: 'csn-' + Date.now(),
+          magType: 'ml', status: 'reviewed',
+          title: 'M ' + mag.toFixed(1) + ' - ' + (ev.place || 'Chile'),
+          _source: 'csn',
+        },
+        geometry: { type: 'Point', coordinates: [lng, lat, depth] },
+        id: 'csn-' + Date.now(),
+      }];
+    })
+    .catch(function() { return []; });
+}
+
+async function loadAll() {
+  var results = await Promise.all([fetchUSGS(), fetchCSN()]);
+  var usgsEvents = results[0], csnEvents = results[1];
+  // Filter CSN by minMag
+  csnEvents = csnEvents.filter(function(e) { return (e.properties.mag || 0) >= minMag; });
+  var merged = usgsEvents.slice();
+  for (var i = 0; i < csnEvents.length; i++) {
+    var ce = csnEvents[i];
+    var dup = merged.some(function(m) {
+      var d = Math.abs(m.geometry.coordinates[0] - ce.geometry.coordinates[0]) +
+               Math.abs(m.geometry.coordinates[1] - ce.geometry.coordinates[1]);
+      return d < 0.5 && Math.abs((m.properties.time || 0) - (ce.properties.time || 0)) < 600000;
+    });
+    if (!dup) merged.push(ce);
+  }
+  merged.sort(function(a, b) { return (b.properties.time || 0) - (a.properties.time || 0); });
+  allData = merged;
+  var points = merged.map(function(f) {
+    var p = f.properties;
+    var c = f.geometry.coordinates;
+    return {
+      lat: c[1], lng: c[0], mag: p.mag || 0, depth: c[2] || 0,
+      place: p.place || 'Desconocido', time: p.time,
+      tsunami: p.tsunami || 0, alert: p.alert, felt: p.felt,
+      cdi: p.cdi, mmi: p.mmi, sig: p.sig, status: p.status,
+      code: p.code, url: p.url, magType: p.magType,
+      source: p._source || 'usgs', title: p.title,
+      _feature: f,
+    };
+  });
+  buildQuakes(points);
+  updateStats();
+}
+
+function updateStats() {
+  document.getElementById('s-count').textContent = allData.length;
+  var maxM = allData.reduce(function(mx, f) { return Math.max(mx, f.properties.mag || 0); }, 0);
+  document.getElementById('s-max').textContent = maxM > 0 ? maxM.toFixed(1) : '—';
+  document.getElementById('s-tsu').textContent = allData.filter(function(f) { return (f.properties.tsunami || 0) === 1; }).length;
+}
+
+var geoCache = {};
+function reverseGeo(lat, lng) {
+  return fetch('https://nominatim.openstreetmap.org/reverse?format=json&lat=' + lat + '&lon=' + lng + '&zoom=3&accept-language=es')
+    .then(function(r) { return r.json(); })
+    .then(function(d) { return (d.address || {}).country || (d.address || {}).region || 'Oc\u00e9ano'; })
+    .catch(function() { return 'Desconocido'; });
+}
+
+async function showPanel(f) {
+  var p = f.properties;
+  var c = f.geometry.coordinates;
+  var lat = c[1], lng = c[0], depth = c[2] || 0;
+  var mag = p.mag || 0;
+  var tsunami = p.tsunami || 0;
+  var color = tsunami === 1 ? '#ef4444' : getStyle(mag);
+  var isCSN = p._source === 'csn';
+  var key = lat.toFixed(2) + ',' + lng.toFixed(2);
+  if (!geoCache[key]) geoCache[key] = await reverseGeo(lat, lng);
+  var country = geoCache[key];
+  var alertMap = { green: 'Verde', yellow: 'Amarilla', orange: 'Naranja', red: 'Roja' };
+  document.getElementById('panel-content').innerHTML =
+    '<div class="source-badge ' + (isCSN ? 'csn' : 'usgs') + '">' + (isCSN ? 'CSN Chile' : 'USGS Global') + '</div>' +
+    '<div class="mag" style="color:' + color + '">M ' + mag.toFixed(1) + '</div>' +
+    '<div class="mag-type">' + (p.magType || '—') + '</div>' +
+    '<div class="place">' + (p.place || 'Desconocido') + '</div>' +
+    '<div class="divider"></div>' +
+    '<div class="field"><span class="label">Coordenadas</span><span class="value highlight">' + lat.toFixed(4) + ', ' + lng.toFixed(4) + '</span></div>' +
+    '<div class="field"><span class="label">Pa\u00eds</span><span class="value highlight">' + country + '</span></div>' +
+    '<div class="field"><span class="label">Profundidad</span><span class="value">' + depth.toFixed(1) + ' km</span></div>' +
+    '<div class="field"><span class="label">Tsunami</span><span class="value">' + (tsunami === 1 ? 'EVALUADO' : 'No') + '</span></div>' +
+    '<div class="field"><span class="label">Alerta PAGER</span><span class="value">' + (alertMap[p.alert] || '—') + '</span></div>' +
+    '<div class="divider"></div>' +
+    '<div class="field"><span class="label">Fecha UTC</span><span class="value">' + fmtUTC(p.time) + '</span></div>' +
+    (!isCSN ? '<div class="field"><span class="label">Hora Chile</span><span class="value">' + fmtLocal(p.time) + '</span></div>' : '') +
+    '<div class="field"><span class="label">Tipo magnitud</span><span class="value">' + (p.magType || '—') + '</span></div>' +
+    '<div class="field"><span class="label">Reportes (felt)</span><span class="value">' + (p.felt != null ? p.felt : '—') + '</span></div>' +
+    '<div class="field"><span class="label">Intensidad CDI</span><span class="value">' + (p.cdi != null ? p.cdi.toFixed(1) : '—') + '</span></div>' +
+    '<div class="field"><span class="label">Intensidad MMI</span><span class="value">' + (p.mmi != null ? p.mmi.toFixed(1) : '—') + '</span></div>' +
+    '<div class="field"><span class="label">Significancia</span><span class="value">' + (p.sig || 0) + '</span></div>' +
+    '<div class="field"><span class="label">Estado</span><span class="value">' + (p.status === 'reviewed' ? 'Revisado' : 'Autom\u00e1tico') + '</span></div>' +
+    '<div class="field"><span class="label">C\u00f3digo</span><span class="value">' + (p.code || '—') + '</span></div>' +
+    (p.url ? '<a class="btn-link" href="' + p.url + '" target="_blank">Ver en ' + (isCSN ? 'CSN' : 'USGS') + ' \u2192</a>' : '');
+  document.getElementById('side-panel').classList.add('open');
+}
+
+document.getElementById('panel-close').addEventListener('click', function() {
+  document.getElementById('side-panel').classList.remove('open');
+});
+document.getElementById('side-panel').addEventListener('click', function(e) {
+  if (e.target === document.getElementById('side-panel')) {
+    document.getElementById('side-panel').classList.remove('open');
+  }
+});
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') document.getElementById('side-panel').classList.remove('open');
+});
+
+// Layer toggle
+document.querySelectorAll('.layer-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    var layer = this.dataset.layer;
+    if (layer === 'satellite') {
+      return;
+    }
+    this.classList.toggle('active');
+    var show = this.classList.contains('active');
+    if (layer === 'borders') borderGroup.visible = show;
+    if (layer === 'tectonic') plateGroup.visible = show;
+  });
+});
+
+// Filter buttons
+document.querySelectorAll('#filtros .f-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    var filter = this.dataset.filter;
+    var value = this.dataset.value;
+    var changed = false;
+    if (filter === 'range') {
+      if (range === value) return;
+      range = value;
+      document.querySelectorAll('#filtros .f-btn[data-filter="range"]').forEach(function(b) { b.classList.remove('active'); });
+      this.classList.add('active');
+      changed = true;
+    } else if (filter === 'mag') {
+      if (minMag === parseFloat(value)) return;
+      minMag = parseFloat(value);
+      document.querySelectorAll('#filtros .f-btn[data-filter="mag"]').forEach(function(b) { b.classList.remove('active'); });
+      this.classList.add('active');
+      changed = true;
+    }
+    if (changed) loadAll();
+  });
+});
+
+// Plate info popup
+var placaRow = document.getElementById('placa-info');
+var placaPopup = document.getElementById('placa-popup');
+placaRow.addEventListener('mouseenter', function() { placaPopup.classList.add('show'); });
+placaRow.addEventListener('mouseleave', function() { placaPopup.classList.remove('show'); });
+
+loadAll();
+intervalId = setInterval(loadAll, 60000);
+
+// Visitor counter
+var v = parseInt(localStorage.getItem('geosism_visits') || '0') + 1;
+localStorage.setItem('geosism_visits', v);
+var el = document.getElementById('visita-count');
+if(el) el.textContent = 'V: ' + v;
+fetch('https://api.countapi.xyz/hit/geosism-globo/visits').then(function(r){return r.json();}).then(function(d){
+  if(el) el.textContent = 'V: ' + d.value;
+}).catch(function(){});
+
+// Glossary popup
+var glosarioData = {
+  coordenadas: { titulo: 'Coordenadas', def: 'Sistema que se utiliza para expresar las coordenadas geográficas del epicentro (proyección en la superficie del hipocentro) definidas por latitud y longitud, cuya referencia es el Datum WGS84; convencionalmente se definen los hemisferios Sur y Oeste con signo negativo.' },
+  distancia: { titulo: 'Distancia epicentral', def: 'Es la distancia entre el epicentro de un sismo y el sitio de interés (e.g. observador, estación sismológica), medida sobre la superficie de la Tierra.' },
+  enjambre: { titulo: 'Enjambre sísmico (swarm)', def: 'Es la ocurrencia de numerosos sismos concentrados en una región durante un periodo de tiempo de días a varios meses. Estos sismos no se pueden asociar a un sismo principal y sus réplicas, sino a numerosos sismos con magnitud máxima moderada.' },
+  epicentro: { titulo: 'Epicentro', def: 'Es el punto en la superficie de la Tierra ubicado directamente sobre el foco o hipocentro (latitud, longitud).' },
+  mercalli: { titulo: 'Escala Modificada de Mercalli', def: 'Es una escala de doce grados que mide la intensidad observada en un lugar específico dado los efectos que produce el sismo. Para un mismo temblor habitualmente se reportan varias intensidades las que, en general, decrecen a medida que la distancia epicentral aumenta.' },
+  richter: { titulo: 'Escala de Richter', def: 'Escala de magnitud de un sismo desarrollada inicialmente por C.F. Richter en 1935 que se conoce como magnitud local (ML). Ha evolucionado en las últimas décadas y en el presente se utiliza preponderantemente la magnitud momento (Mw).' },
+  falla: { titulo: 'Falla', def: 'Es una fractura en las rocas en el interior de la Tierra a lo largo de la cual se mueven los bloques rocosos que son separados por ella, debido a que el esfuerzo acumulado excede la resistencia interna entre los bloques.' },
+  subduccion: { titulo: 'Subducción', def: 'Hundimiento de gran amplitud de una porción de litosfera bajo otra. El término designa el hecho de hundirse la litosfera oceánica bajo otra litosfera.' },
+  tsunami: { titulo: 'Tsunami', def: 'Un maremoto o tsunami es una serie de ondas comúnmente causadas por un terremoto bajo el piso oceánico, que viajan a velocidades de hasta 800km/h, y, al llegar a la playa, pueden convertirse en olas de hasta 30 metros de altura. Por ello, implican un grave riesgo para los seres humanos y las edificaciones.' },
+  kit: { titulo: 'KIT DE EMERGENCIA', kit: true, def: 'Acostúmbrese a tener a mano una mochila con:' },
+  kitItems: ['Radio portátil', 'Linterna con pilas', 'Botiquín de primeros auxilios', 'Agua embotellada', 'Alimentos enlatados y granos secos', 'Abrelatas', 'Una copia de sus documentos personales', 'Pito o Silbato', 'Celular con teléfonos de emergencia']
+};
+var glosarioPopup = document.getElementById('glosario-popup');
+var activeGlosario = null;
+document.querySelectorAll('.glosario-item').forEach(function(item) {
+  item.addEventListener('click', function() {
+    var term = this.getAttribute('data-term');
+    var data = glosarioData[term];
+    if (activeGlosario === this) {
+      glosarioPopup.classList.remove('show');
+      this.classList.remove('active');
+      activeGlosario = null;
+      return;
+    }
+    document.querySelectorAll('.glosario-item').forEach(function(g) { g.classList.remove('active'); });
+    this.classList.add('active');
+    var html = '<div class="g-titulo' + (data.kit ? ' kit' : '') + '">' + data.titulo + '</div>';
+    html += '<div class="g-def">' + data.def + '</div>';
+    if (data.kit) {
+      html += '<div class="g-def">';
+      glosarioData.kitItems.forEach(function(k) { html += '<div class="g-kit-item">' + k + '</div>'; });
+      html += '</div>';
+    }
+    glosarioPopup.innerHTML = html;
+    var rect = this.getBoundingClientRect();
+    var popW = 300;
+    glosarioPopup.style.left = (rect.left - popW - 10) + 'px';
+    glosarioPopup.style.top = Math.max(10, rect.top - 10) + 'px';
+    glosarioPopup.classList.add('show');
+    activeGlosario = this;
+  });
+});
+document.addEventListener('click', function(e) {
+  if (activeGlosario && !e.target.closest('.glosario-item') && !e.target.closest('#glosario-popup')) {
+    glosarioPopup.classList.remove('show');
+    activeGlosario.classList.remove('active');
+    activeGlosario = null;
+  }
+});
+</script>
+</body>
+</html>
