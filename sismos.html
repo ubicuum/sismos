@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GEOSISM — Monitoreo Sísmico</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Inter', sans-serif;
+  background: #0a0a12;
+  color: #e0e0e0;
+  overflow: hidden;
+  height: 100vh;
+}
+#map {
+  width: 100vw;
+  height: 100vh;
+  position: absolute;
+  top: 0; left: 0; z-index: 0;
+}
+#map .leaflet-interactive { cursor: default !important; }
+#header {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 20px;
+  background: linear-gradient(180deg, rgba(10,10,18,0.85) 60%, transparent);
+  pointer-events: none;
+}
+#header > * { pointer-events: auto; }
+#brand {
+  display: flex; align-items: center; gap: 12px;
+}
+#brand-icon {
+  position: relative; width: 36px; height: 36px;
+  display: flex; justify-content: center; align-items: center;
+}
+#brand-icon .ring {
+  position: absolute; border: 2.5px solid #00f3ff; border-radius: 50%; opacity: 0.7;
+}
+#brand-icon .ring-1 { width: 36px; height: 36px; border-style: double; border-width: 2.5px; }
+#brand-icon .ring-2 { width: 26px; height: 26px; }
+#brand-icon .ring-3 { width: 17px; height: 17px; }
+#brand-icon .eye {
+  position: absolute; width: 7px; height: 7px;
+  background: #00f3ff; border-radius: 50%;
+}
+#brand-icon .eye::after {
+  content: ''; position: absolute; width: 2px; height: 2px;
+  background: #0a0a12; border-radius: 50%; top: 1.5px; left: 1.5px;
+}
+#brand-text {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 16px; font-weight: 700; letter-spacing: 4px;
+  color: #fff; text-transform: uppercase;
+}
+#brand-text span { color: #00f3ff; }
+#brand-sub {
+  font-size: 8px; letter-spacing: 3px;
+  color: rgba(255,255,255,0.2); margin-top: -1px;
+}
+#top-right {
+  display: flex; align-items: center; gap: 10px;
+}
+#stats {
+  display: flex; gap: 14px;
+  background: rgba(10,10,18,0.5); backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.05); border-radius: 6px;
+  padding: 6px 14px; font-size: 10px;
+}
+#stats .item { text-align: center; }
+#stats .item .num { font-size: 13px; font-weight: 600; color: #00f3ff; }
+#stats .item .lbl {
+  color: rgba(255,255,255,0.25); font-size: 7px;
+  text-transform: uppercase; letter-spacing: 1px; margin-top: 1px;
+}
+#filters {
+  display: flex; gap: 2px;
+  background: rgba(10,10,18,0.5); backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.05); border-radius: 6px; padding: 4px;
+}
+#filters button {
+  font-family: 'Inter', sans-serif; font-size: 9px; font-weight: 500;
+  padding: 3px 8px; background: transparent; border: none;
+  border-radius: 4px; color: rgba(255,255,255,0.35); cursor: pointer;
+  transition: all 0.15s;
+}
+#filters button:hover { color: #fff; background: rgba(255,255,255,0.04); }
+#filters button.active { color: #00f3ff; background: rgba(0,243,255,0.06); }
+#leyenda {
+  position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 1000;
+  display: flex; gap: 14px; align-items: center;
+  background: rgba(10,10,18,0.5); backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.04); border-radius: 6px;
+  padding: 6px 14px; font-size: 9px;
+}
+#leyenda .row { display: flex; align-items: center; gap: 5px; }
+#leyenda .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+#leyenda .dot.special { width: 8px; height: 8px; border: 1.5px solid #fbbf24; background: transparent; }
+#side-panel {
+  position: fixed; top: 0; right: -380px; width: 380px; height: 100vh;
+  z-index: 2000; background: rgba(10,10,18,0.92); backdrop-filter: blur(20px);
+  border-left: 1px solid rgba(255,255,255,0.05);
+  transition: right 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow-y: auto;
+}
+#side-panel.open { right: 0; }
+#side-panel .close {
+  position: absolute; top: 14px; right: 14px;
+  width: 28px; height: 28px; border: none;
+  background: rgba(255,255,255,0.04); border-radius: 50%;
+  color: rgba(255,255,255,0.4); font-size: 14px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+#side-panel .close:hover { background: rgba(255,255,255,0.08); color: #fff; }
+#side-panel .panel-inner { padding: 36px 24px 24px; }
+#side-panel .source-badge {
+  display: inline-block; font-size: 8px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 1.5px;
+  padding: 3px 8px; border-radius: 4px; margin-bottom: 12px;
+}
+#side-panel .source-badge.usgs {
+  background: rgba(0,243,255,0.06); color: #00f3ff;
+  border: 1px solid rgba(0,243,255,0.1);
+}
+#side-panel .source-badge.csn {
+  background: rgba(251,191,36,0.06); color: #fbbf24;
+  border: 1px solid rgba(251,191,36,0.1);
+}
+#side-panel .mag { font-size: 36px; font-weight: 700; line-height: 1; margin-bottom: 2px; }
+#side-panel .mag-type { font-size: 10px; color: rgba(255,255,255,0.25); margin-bottom: 12px; }
+#side-panel .place { font-size: 12px; color: rgba(255,255,255,0.5); margin-bottom: 16px; line-height: 1.4; }
+#side-panel .divider { height: 1px; background: rgba(255,255,255,0.04); margin: 12px 0; }
+#side-panel .field {
+  display: flex; justify-content: space-between;
+  padding: 3px 0; font-size: 11px;
+  border-bottom: 1px solid rgba(255,255,255,0.02);
+}
+#side-panel .field:last-child { border-bottom: none; }
+#side-panel .field .label { color: rgba(255,255,255,0.25); }
+#side-panel .field .value { color: #ccc; font-weight: 500; text-align: right; }
+#side-panel .field .value.highlight { color: #00f3ff; }
+#side-panel .btn-link {
+  display: block; margin-top: 16px; text-align: center;
+  color: #00f3ff; text-decoration: none; font-size: 11px; font-weight: 500;
+  border: 1px solid rgba(0,243,255,0.1); border-radius: 4px;
+  padding: 8px; transition: all 0.15s;
+}
+#side-panel .btn-link:hover { background: rgba(0,243,255,0.04); border-color: rgba(0,243,255,0.2); }
+#side-panel::-webkit-scrollbar { width: 3px; }
+#side-panel::-webkit-scrollbar-track { background: transparent; }
+#side-panel::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.06); border-radius: 3px; }
+.leaflet-control-zoom { border: none !important; box-shadow: none !important; }
+.leaflet-control-zoom a {
+  background: rgba(10,10,18,0.7) !important;
+  color: rgba(255,255,255,0.5) !important;
+  border: 1px solid rgba(255,255,255,0.06) !important;
+  width: 28px !important; height: 28px !important; line-height: 28px !important;
+  font-size: 14px !important;
+}
+.leaflet-control-zoom a:hover { color: #fff !important; background: rgba(10,10,18,0.9) !important; }
+.leaflet-control-attribution { display: none !important; }
+@media (max-width: 600px) {
+  #side-panel { width: 100vw; right: -100vw; }
+  #header { flex-wrap: wrap; gap: 8px; padding: 10px 12px; }
+  #top-right { width: 100%; justify-content: flex-end; }
+  #stats { padding: 4px 10px; gap: 10px; }
+  #filters { flex-wrap: wrap; }
+  #leyenda { bottom: 12px; padding: 4px 10px; gap: 8px; font-size: 8px; }
+}
+</style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<div id="header">
+  <div id="brand">
+    <div id="brand-icon">
+      <div class="ring ring-1"></div>
+      <div class="ring ring-2"></div>
+      <div class="ring ring-3"></div>
+      <div class="eye"></div>
+    </div>
+    <div>
+      <div id="brand-text">GEOSISM<span>.</span></div>
+      <div id="brand-sub">MONITOREO SÍSMICO</div>
+    </div>
+  </div>
+  <div id="top-right">
+    <div id="filters">
+      <button data-range="hour">1H</button>
+      <button data-range="day" class="active">24H</button>
+      <button data-range="7day">7D</button>
+      <span style="width:1px;height:12px;background:rgba(255,255,255,0.04);margin:0 2px;align-self:center;"></span>
+      <button data-min="0">Todas</button>
+      <button data-min="2.5">&ge;2.5</button>
+      <button data-min="4.5" class="active">&ge;4.5</button>
+      <button data-min="6">&ge;6.0</button>
+    </div>
+    <div id="stats">
+      <div class="item"><div class="num" id="s-count">—</div><div class="lbl">Eventos</div></div>
+      <div class="item"><div class="num" id="s-max">—</div><div class="lbl">M máx</div></div>
+      <div class="item"><div class="num" id="s-tsu">0</div><div class="lbl">Tsunami</div></div>
+    </div>
+  </div>
+</div>
+
+<div id="leyenda">
+  <div class="row"><div class="dot" style="background:#4ade80"></div> &lt;3</div>
+  <div class="row"><div class="dot" style="background:#facc15"></div> 3–4.5</div>
+  <div class="row"><div class="dot" style="background:#fb923c"></div> 4.5–6</div>
+  <div class="row"><div class="dot" style="background:#ef4444"></div> 6+</div>
+  <div class="row"><div class="dot special"></div> CSN</div>
+</div>
+
+<div id="side-panel">
+  <button class="close" id="panel-close">&times;</button>
+  <div class="panel-inner" id="panel-content"></div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+var map = L.map('map', {
+  center: [-33, -71],
+  zoom: 3,
+  minZoom: 2,
+  zoomControl: true,
+  attributionControl: false,
+  maxBounds: [[-90, -180], [90, 180]],
+  maxBoundsViscosity: 1,
+});
+
+L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+  maxZoom: 19,
+  noWrap: true,
+  attribution: '&copy; CARTO',
+}).addTo(map);
+
+var markers = L.layerGroup().addTo(map);
+var circleLayer = L.layerGroup().addTo(map);
+var range = 'day';
+var minMag = 4.5;
+var allData = [];
+var intervalId;
+
+function getColor(mag) {
+  if (mag >= 6) return '#ef4444';
+  if (mag >= 4.5) return '#fb923c';
+  if (mag >= 3) return '#facc15';
+  return '#4ade80';
+}
+function getRadius(mag) {
+  if (mag >= 8) return 12;
+  if (mag >= 6) return 10;
+  if (mag >= 4.5) return 8;
+  if (mag >= 3) return 6;
+  return 4;
+}
+function fmtUTC(ts) { return new Date(ts).toUTCString().replace('GMT', 'UTC'); }
+function fmtLocal(ts) { return new Date(ts).toLocaleString('es-CL', { timeZone: 'America/Santiago' }); }
+
+function fetchUSGS() {
+  var st = new Date();
+  if (range === 'hour') st.setHours(st.getHours() - 1);
+  else if (range === 'day') st.setDate(st.getDate() - 1);
+  else if (range === '7day') st.setDate(st.getDate() - 7);
+  var start = st.toISOString();
+  var url = 'https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&starttime=' + start + '&minmagnitude=' + minMag + '&orderby=time&limit=200';
+  return fetch(url).then(function(r) { return r.json(); }).then(function(d) { return d.features || []; });
+}
+
+function fetchCSN() {
+  return fetch('https://api.boostr.cl/earthquakes.json')
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d.status !== 'success' || !d.data) return [];
+      var ev = d.data;
+      var lat = parseFloat(ev.latitude);
+      var lng = parseFloat(ev.longitude);
+      if (isNaN(lat) || isNaN(lng)) return [];
+      var mag = parseFloat(ev.magnitude) || 0;
+      var depth = parseInt(ev.depth) || 0;
+      var ts = new Date(ev.date + 'T' + ev.hour + '-04:00').getTime();
+      return [{
+        type: 'Feature',
+        properties: {
+          mag: mag, place: ev.place, time: ts, updated: ts,
+          url: ev.info, detail: null, felt: null, cdi: null, mmi: null,
+          alert: null, tsunami: 0, sig: Math.round(mag * 100),
+          net: 'csn', code: 'csn-' + Date.now(),
+          magType: 'ml', status: 'reviewed', type: 'earthquake',
+          title: 'M ' + mag.toFixed(1) + ' - ' + (ev.place || 'Chile'),
+          _source: 'csn',
+        },
+        geometry: { type: 'Point', coordinates: [lng, lat, depth] },
+        id: 'csn-' + Date.now(),
+      }];
+    })
+    .catch(function() { return []; });
+}
+
+async function loadAll() {
+  var results = await Promise.all([fetchUSGS(), fetchCSN()]);
+  var usgsEvents = results[0], csnEvents = results[1];
+  var merged = usgsEvents.slice();
+  for (var i = 0; i < csnEvents.length; i++) {
+    var ce = csnEvents[i];
+    var dup = merged.some(function(m) {
+      var d = Math.abs(m.geometry.coordinates[0] - ce.geometry.coordinates[0]) +
+               Math.abs(m.geometry.coordinates[1] - ce.geometry.coordinates[1]);
+      return d < 0.5 && Math.abs((m.properties.time || 0) - (ce.properties.time || 0)) < 600000;
+    });
+    if (!dup) merged.push(ce);
+  }
+  merged.sort(function(a, b) { return (b.properties.time || 0) - (a.properties.time || 0); });
+  allData = merged;
+  render();
+  updateStats();
+}
+
+function render() {
+  markers.clearLayers();
+  for (var i = 0; i < allData.length; i++) {
+    var f = allData[i];
+    var p = f.properties;
+    var c = f.geometry.coordinates;
+    var lat = c[1], lng = c[0];
+    var mag = p.mag || 0;
+    var tsunami = p.tsunami || 0;
+    var color = tsunami === 1 ? '#ef4444' : getColor(mag);
+    var radius = getRadius(mag);
+    var isCSN = p._source === 'csn';
+    var border = isCSN
+      ? 'border:2px solid #222;outline:1.5px solid #fbbf24;'
+      : 'border:2px solid #222;';
+    var html = '<div style="width:' + (radius*2) + 'px;height:' + (radius*2) + 'px;border-radius:50%;background:' + color + ';' + border + 'box-shadow:0 0 3px rgba(0,0,0,0.5), 0 0 6px ' + color + '40"></div>';
+    var icon = L.divIcon({ html: html, className: '', iconSize: [radius*2, radius*2], iconAnchor: [radius, radius] });
+    var marker = L.marker([lat, lng], { icon: icon }).addTo(markers);
+    marker.on('click', function(ev) {
+      circleLayer.clearLayers();
+      var f2 = ev.target.feature;
+      if (!f2) return;
+      var c2 = f2.geometry.coordinates;
+      var lat2 = c2[1], lng2 = c2[0];
+      var p2 = f2.properties;
+      var mag2 = p2.mag || 0;
+      var color2 = (p2.tsunami || 0) === 1 ? '#ef4444' : getColor(mag2);
+      var r = Math.min(mag2 * 15 + 10, 300);
+      L.circle([lat2, lng2], {
+        radius: r * 1000, color: color2, opacity: 0.1,
+        fillColor: color2, fillOpacity: 0.04, weight: 1,
+      }).addTo(circleLayer);
+      showPanel(f2);
+    });
+    marker.feature = f;
+  }
+}
+
+var geoCache = {};
+function reverseGeo(lat, lng) {
+  return fetch('https://nominatim.openstreetmap.org/reverse?format=json&lat=' + lat + '&lon=' + lng + '&zoom=3&accept-language=es')
+    .then(function(r) { return r.json(); })
+    .then(function(d) { return (d.address || {}).country || (d.address || {}).region || 'Oc\u00e9ano'; })
+    .catch(function() { return 'Desconocido'; });
+}
+
+async function showPanel(f) {
+  var p = f.properties;
+  var c = f.geometry.coordinates;
+  var lat = c[1], lng = c[0], depth = c[2] || 0;
+  var mag = p.mag || 0;
+  var tsunami = p.tsunami || 0;
+  var color = tsunami === 1 ? '#ef4444' : getColor(mag);
+  var isCSN = p._source === 'csn';
+  var key = lat.toFixed(2) + ',' + lng.toFixed(2);
+  if (!geoCache[key]) geoCache[key] = await reverseGeo(lat, lng);
+  var country = geoCache[key];
+  var alertMap = { green: 'Verde', yellow: 'Amarilla', orange: 'Naranja', red: 'Roja' };
+  document.getElementById('panel-content').innerHTML =
+    '<div class="source-badge ' + (isCSN ? 'csn' : 'usgs') + '">' + (isCSN ? 'CSN Chile' : 'USGS Global') + '</div>' +
+    '<div class="mag" style="color:' + color + '">M ' + mag.toFixed(1) + '</div>' +
+    '<div class="mag-type">' + (p.magType || '—') + '</div>' +
+    '<div class="place">' + (p.place || 'Desconocido') + '</div>' +
+    '<div class="divider"></div>' +
+    '<div class="field"><span class="label">Coordenadas</span><span class="value highlight">' + lat.toFixed(4) + ', ' + lng.toFixed(4) + '</span></div>' +
+    '<div class="field"><span class="label">Pa\u00eds</span><span class="value highlight">' + country + '</span></div>' +
+    '<div class="field"><span class="label">Profundidad</span><span class="value">' + depth.toFixed(1) + ' km</span></div>' +
+    '<div class="field"><span class="label">Tsunami</span><span class="value">' + (tsunami === 1 ? 'EVALUADO' : 'No') + '</span></div>' +
+    '<div class="field"><span class="label">Alerta PAGER</span><span class="value">' + (alertMap[p.alert] || '—') + '</span></div>' +
+    '<div class="divider"></div>' +
+    '<div class="field"><span class="label">Fecha UTC</span><span class="value">' + fmtUTC(p.time) + '</span></div>' +
+    (!isCSN ? '<div class="field"><span class="label">Hora Chile</span><span class="value">' + fmtLocal(p.time) + '</span></div>' : '') +
+    '<div class="field"><span class="label">Tipo magnitud</span><span class="value">' + (p.magType || '—') + '</span></div>' +
+    '<div class="field"><span class="label">Reportes (felt)</span><span class="value">' + (p.felt != null ? p.felt : '—') + '</span></div>' +
+    '<div class="field"><span class="label">Intensidad CDI</span><span class="value">' + (p.cdi != null ? p.cdi.toFixed(1) : '—') + '</span></div>' +
+    '<div class="field"><span class="label">Intensidad MMI</span><span class="value">' + (p.mmi != null ? p.mmi.toFixed(1) : '—') + '</span></div>' +
+    '<div class="field"><span class="label">Significancia</span><span class="value">' + (p.sig || 0) + '</span></div>' +
+    '<div class="field"><span class="label">Estado</span><span class="value">' + (p.status === 'reviewed' ? 'Revisado' : 'Autom\u00e1tico') + '</span></div>' +
+    '<div class="field"><span class="label">C\u00f3digo</span><span class="value">' + (p.code || '—') + '</span></div>' +
+    (p.url ? '<a class="btn-link" href="' + p.url + '" target="_blank">Ver en ' + (isCSN ? 'CSN' : 'USGS') + ' \u2192</a>' : '');
+  document.getElementById('side-panel').classList.add('open');
+}
+
+function updateStats() {
+  document.getElementById('s-count').textContent = allData.length;
+  var maxM = allData.reduce(function(mx, f) { return Math.max(mx, f.properties.mag || 0); }, 0);
+  document.getElementById('s-max').textContent = maxM > 0 ? maxM.toFixed(1) : '—';
+  document.getElementById('s-tsu').textContent = allData.filter(function(f) { return (f.properties.tsunami || 0) === 1; }).length;
+}
+
+document.getElementById('panel-close').addEventListener('click', function() {
+  document.getElementById('side-panel').classList.remove('open');
+  circleLayer.clearLayers();
+});
+document.getElementById('side-panel').addEventListener('click', function(e) {
+  if (e.target === document.getElementById('side-panel')) {
+    document.getElementById('side-panel').classList.remove('open');
+    circleLayer.clearLayers();
+  }
+});
+document.querySelectorAll('#filters button').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    var group = this.dataset.range ? '[data-range]' : '[data-min]';
+    document.querySelectorAll(group).forEach(function(b) { b.classList.remove('active'); });
+    this.classList.add('active');
+    if (this.dataset.range) range = this.dataset.range;
+    if (this.dataset.min) minMag = parseFloat(this.dataset.min);
+    circleLayer.clearLayers();
+    document.getElementById('side-panel').classList.remove('open');
+    loadAll();
+  });
+});
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    document.getElementById('side-panel').classList.remove('open');
+    circleLayer.clearLayers();
+  }
+});
+
+loadAll();
+intervalId = setInterval(loadAll, 60000);
+</script>
+</body>
+</html>
