@@ -428,7 +428,10 @@ body {
 </div>
 
 <div id="leyenda">
-  <div class="row"><div class="dot target-dot"></div> Sismos</div>
+  <div class="row"><div class="dot" style="background:#4ade80"></div> &lt;3.0</div>
+  <div class="row"><div class="dot" style="background:#facc15"></div> 3–4.5</div>
+  <div class="row"><div class="dot" style="background:#fb923c"></div> 4.5–6</div>
+  <div class="row"><div class="dot" style="background:#ef4444"></div> 6+</div>
   <div class="row"><div class="dot special"></div> CSN</div>
   <div class="row" id="placa-info"><div class="line-dot" style="background:#ff6633"></div> Placa tectónica ⓘ</div>
   <div id="visita-count"></div>
@@ -948,6 +951,7 @@ function buildQuakes(points) {
     var norm = pos.clone().normalize();
 
     var s = 0.25 + mag * 0.12;
+    var hex = getHex(mag);
 
     // Black border circle (slightly larger)
     var borderMat = new THREE.MeshBasicMaterial({
@@ -962,9 +966,9 @@ function buildQuakes(points) {
     border.renderOrder = 1;
     quakeGroup.add(border);
 
-    // Red fill circle
+    // Color fill circle (by magnitude)
     var fillMat = new THREE.MeshBasicMaterial({
-      color: 0xe61a23, side: THREE.DoubleSide, depthWrite: true, depthTest: true,
+      color: hex, side: THREE.DoubleSide, depthWrite: true, depthTest: true,
     });
     var fill = new THREE.Mesh(_circleGeo, fillMat);
     fill.position.copy(pos);
