@@ -161,6 +161,8 @@ body {
 #leyenda .row { display: flex; align-items: center; gap: 6px; cursor: pointer; }
 #leyenda .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
 #leyenda .dot.special { width: 9px; height: 9px; border: 2px solid #fbbf24; background: transparent; }
+#leyenda .target-dot { width: 10px; height: 10px; background: #e61a23; border: 2px solid #000; position: relative; }
+#leyenda .target-dot::after { content: ''; position: absolute; width: 4px; height: 4px; background: #000; border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%, -50%); }
 #leyenda .line-dot { width: 14px; height: 2px; border-radius: 1px; flex-shrink: 0; }
 #placa-popup {
   position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); z-index: 99;
@@ -426,10 +428,7 @@ body {
 </div>
 
 <div id="leyenda">
-  <div class="row"><div class="dot" style="background:#4ade80"></div> &lt;3.0</div>
-  <div class="row"><div class="dot" style="background:#facc15"></div> 3–4.5</div>
-  <div class="row"><div class="dot" style="background:#fb923c"></div> 4.5–6</div>
-  <div class="row"><div class="dot" style="background:#ef4444"></div> 6+</div>
+  <div class="row"><div class="dot target-dot"></div> Sismos</div>
   <div class="row"><div class="dot special"></div> CSN</div>
   <div class="row" id="placa-info"><div class="line-dot" style="background:#ff6633"></div> Placa tectónica ⓘ</div>
   <div id="visita-count"></div>
@@ -924,7 +923,7 @@ function makeCircle(radius, segments) {
   geo.computeVertexNormals();
   return geo;
 }
-var _circleGeo = makeCircle(1, 16);
+var _circleGeo = makeCircle(1, 32);
 var _alignQ = new THREE.Quaternion();
 var _zAxis = new THREE.Vector3(0, 0, 1);
 
@@ -933,6 +932,22 @@ var quakeGroup = new THREE.Group();
 scene.add(quakeGroup);
 var quakeData = [];
 
+// Shared marker texture: red fill + black border (like a target)
+function makeMarkerTexture() {
+  var c = document.createElement('canvas');
+  c.width = 64; c.height = 64;
+  var ctx = c.getContext('2d');
+  ctx.beginPath(); ctx.arc(32, 32, 30, 0, Math.PI * 2); ctx.closePath();
+  ctx.fillStyle = '#000'; ctx.fill();
+  ctx.beginPath(); ctx.arc(32, 32, 23, 0, Math.PI * 2); ctx.closePath();
+  ctx.fillStyle = '#e61a23'; ctx.fill();
+  ctx.beginPath(); ctx.arc(32, 32, 16, 0, Math.PI * 2); ctx.closePath();
+  ctx.fillStyle = '#000'; ctx.fill();
+  var t = new THREE.CanvasTexture(c);
+  t.needsUpdate = true;
+  return t;
+}
+var _markerTex = makeMarkerTexture();
 
 function buildQuakes(points) {
   while (quakeGroup.children.length) {
@@ -945,15 +960,15 @@ function buildQuakes(points) {
   for (var i = 0; i < points.length; i++) {
     var d = points[i];
     var mag = d.mag || 0;
-    var hex = getHex(mag);
     var isCSN = d.source === 'csn';
     var pos = latLngToPos(d.lat, d.lng, R + 0.3);
     var norm = pos.clone().normalize();
 
     // Flat painted circle — coplanar to earth surface
-    var s = 0.25 + mag * 0.12;
+    var s = 0.3 + mag * 0.14;
     var mat = new THREE.MeshBasicMaterial({
-      color: hex, side: THREE.DoubleSide, depthWrite: true, depthTest: true,
+      map: _markerTex, side: THREE.DoubleSide, depthWrite: true, depthTest: true,
+      transparent: true,
     });
     var mesh = new THREE.Mesh(_circleGeo, mat);
     mesh.position.copy(pos);
@@ -1236,12 +1251,15 @@ loadAll();
 intervalId = setInterval(loadAll, 60000);
 
 // Visitor counter
-var v = parseInt(localStorage.getItem('geosism_visits') || '0') + 1;
-localStorage.setItem('geosism_visits', v);
+var v = parseInt(localStorage.getItem('geosism_v') || '0') + 1;
+localStorage.setItem('geosism_v', v);
 var el = document.getElementById('visita-count');
-if(el) el.textContent = 'V: ' + v;
+function showV(n) { if(el) el.textContent = 'V: ' + n; }
+showV(v);
 fetch('https://api.countapi.xyz/hit/geosism-globo/visits').then(function(r){return r.json();}).then(function(d){
-  if(el) el.textContent = 'V: ' + d.value;
+  var total = Math.max(v, d.value);
+  localStorage.setItem('geosism_v', total);
+  showV(total);
 }).catch(function(){});
 
 // Glossary popup
