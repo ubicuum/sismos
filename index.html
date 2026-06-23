@@ -953,19 +953,6 @@ function buildQuakes(points) {
     var s = 0.25 + mag * 0.12;
     var hex = getHex(mag);
 
-    // Black border circle (slightly larger)
-    var borderMat = new THREE.MeshBasicMaterial({
-      color: 0x000000, side: THREE.DoubleSide, depthWrite: true, depthTest: true,
-    });
-    var border = new THREE.Mesh(_circleGeo, borderMat);
-    border.position.copy(pos);
-    _alignQ.setFromUnitVectors(_zAxis, norm);
-    border.quaternion.copy(_alignQ);
-    border.scale.set(s * 1.3, s * 1.3, s * 1.3);
-    border.userData.normal = norm;
-    border.renderOrder = 1;
-    quakeGroup.add(border);
-
     // Color fill circle (by magnitude)
     var fillMat = new THREE.MeshBasicMaterial({
       color: hex, side: THREE.DoubleSide, depthWrite: true, depthTest: true,
@@ -977,7 +964,7 @@ function buildQuakes(points) {
     fill.scale.set(s, s, s);
     fill.userData.normal = norm;
     fill.userData.feature = d._feature;
-    fill.renderOrder = 2;
+    fill.renderOrder = 1;
     quakeGroup.add(fill);
 
     // CSN golden ring
