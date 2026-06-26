@@ -729,15 +729,7 @@ function tryLoadTex() {
 }
 tryLoadTex();
 
-tryLoadTex();
-
-// City sprite labels (3D coplanar to ground)
-
-
-
-
-
-// City sprite labels (3D coplanar to ground)
+// City labels
 var cities = [
   { name: 'Santiago', lat: -33.45, lng: -70.67 }, { name: 'Buenos Aires', lat: -34.60, lng: -58.38 },
   { name: 'Lima', lat: -12.05, lng: -77.03 }, { name: 'Bogotá', lat: 4.71, lng: -74.07 },
@@ -763,6 +755,36 @@ var cities = [
   { name: 'Hong Kong', lat: 22.32, lng: 114.17 }, { name: 'Nairobi', lat: -1.29, lng: 36.82 },
   { name: 'Lagos', lat: 6.52, lng: 3.38 }, { name: 'Kinshasa', lat: -4.33, lng: 15.32 },
   { name: 'Perth', lat: -31.95, lng: 115.86 }, { name: 'Auckland', lat: -36.85, lng: 174.76 },
+  { name: 'Valdivia', lat: -39.81, lng: -73.25 }, { name: 'Concepción', lat: -36.83, lng: -73.05 },
+  { name: 'Antofagasta', lat: -23.65, lng: -70.40 }, { name: 'Iquique', lat: -20.21, lng: -70.15 },
+  { name: 'Viña del Mar', lat: -33.02, lng: -71.55 }, { name: 'Arica', lat: -18.47, lng: -70.31 },
+  { name: 'Rancagua', lat: -34.17, lng: -70.74 }, { name: 'Talca', lat: -35.43, lng: -71.67 },
+  { name: 'Temuco', lat: -38.73, lng: -72.59 }, { name: 'Osorno', lat: -40.57, lng: -73.13 },
+  { name: 'Copiapo', lat: -27.37, lng: -70.33 }, { name: 'La Serena', lat: -29.90, lng: -71.25 },
+  { name: 'San Pedro', lat: -42.46, lng: -73.01 }, { name: 'Talca', lat: -35.43, lng: -71.67 },
+  { name: 'Cusco', lat: -13.52, lng: -71.97 }, { name: 'Arequipa', lat: -16.40, lng: -71.54 },
+  { name: 'Medellín', lat: 6.25, lng: -75.56 }, { name: 'Quito', lat: -0.18, lng: -78.47 },
+  { name: 'Guayaquil', lat: -2.17, lng: -79.89 }, { name: 'La Paz', lat: -16.50, lng: -68.15 },
+  { name: 'Asunción', lat: -25.26, lng: -57.58 }, { name: 'Montevideo', lat: -34.90, lng: -56.19 },
+  { name: 'Porto Alegre', lat: -30.03, lng: -51.23 }, { name: 'Río de Janeiro', lat: -22.91, lng: -43.17 },
+  { name: 'Salvador', lat: -12.97, lng: -38.50 }, { name: 'Brasília', lat: -15.79, lng: -47.88 },
+  { name: 'Manaus', lat: -3.12, lng: -60.02 }, { name: 'Panamá', lat: 8.98, lng: -79.52 },
+  { name: 'San José', lat: 9.93, lng: -84.09 }, { name: 'Guatemala', lat: 14.63, lng: -90.51 },
+  { name: 'Chicago', lat: 41.88, lng: -87.63 }, { name: 'San Francisco', lat: 37.77, lng: -122.42 },
+  { name: 'Vancouver', lat: 49.28, lng: -123.12 }, { name: 'Anchorage', lat: 61.22, lng: -149.90 },
+  { name: 'Roma', lat: 41.90, lng: 12.50 }, { name: 'Barcelona', lat: 41.39, lng: 2.17 },
+  { name: 'Atenas', lat: 37.98, lng: 23.73 }, { name: 'Tel Aviv', lat: 32.09, lng: 34.78 },
+  { name: 'Riad', lat: 24.71, lng: 46.67 }, { name: 'Teherán', lat: 35.69, lng: 51.39 },
+  { name: 'Islamabad', lat: 33.73, lng: 73.07 }, { name: 'Bombay', lat: 19.08, lng: 72.88 },
+  { name: 'Kolkata', lat: 22.57, lng: 88.36 }, { name: 'Chennai', lat: 13.08, lng: 80.27 },
+  { name: 'Kuala Lumpur', lat: 3.14, lng: 101.69 }, { name: 'Hanói', lat: 21.03, lng: 105.85 },
+  { name: 'Taipéi', lat: 25.03, lng: 121.56 }, { name: 'Osaka', lat: 34.69, lng: 135.50 },
+  { name: 'Rangún', lat: 16.84, lng: 96.17 }, { name: 'Daca', lat: 23.81, lng: 90.41 },
+  { name: 'Kabul', lat: 34.53, lng: 69.17 }, { name: 'Bagdad', lat: 33.32, lng: 44.42 },
+  { name: 'Johannesburgo', lat: -26.20, lng: 28.04 }, { name: 'Argel', lat: 36.75, lng: 3.04 },
+  { name: 'Casablanca', lat: 33.57, lng: -7.59 }, { name: 'Dakar', lat: 14.72, lng: -17.47 },
+  { name: 'Adís Abeba', lat: 9.03, lng: 38.74 }, { name: 'Dar es Salaam', lat: -6.79, lng: 39.27 },
+  { name: 'Luanda', lat: -8.84, lng: 13.29 }, { name: 'Maputo', lat: -25.97, lng: 32.57 },
 ];
 
 function latLngToPos(lat, lng, r) {
@@ -781,12 +803,50 @@ cities.forEach(function(c) {
   var div = document.createElement('div');
   div.textContent = c.name;
   div.style.color = 'rgba(255,255,255,0.8)';
-  div.style.fontSize = '9px';
+  div.style.fontSize = '12px';
   div.style.fontFamily = 'Inter, sans-serif';
-  div.style.fontWeight = '500';
+  div.style.fontWeight = '600';
   div.style.textShadow = '0 0 8px rgba(0,0,0,0.95)';
   div.style.whiteSpace = 'nowrap';
   div.style.letterSpacing = '0.3px';
+  var label = new CSS2DObject(div);
+  label.position.copy(pos);
+  label.userData.normal = pos.clone().normalize();
+  scene.add(label);
+  cityLabels.push(label);
+});
+
+// Ocean/region reference labels
+var regionLabels = [
+  { n: 'OCÉANO PACÍFICO', la: 0, lo: -140 },
+  { n: 'OCÉANO ATLÁNTICO', la: 0, lo: -40 },
+  { n: 'OCÉANO ÍNDICO', la: -10, lo: 75 },
+  { n: 'MAR MEDITERRÁNEO', la: 36, lo: 16 },
+  { n: 'CARIBE', la: 16, lo: -76 },
+  { n: 'CIRCUNPACÍFICO', la: -30, lo: -120 },
+  { n: 'ANILLO DE FUEGO', la: -40, lo: -115 },
+  { n: 'PACÍFICO SUR', la: -50, lo: -130 },
+  { n: 'AMÉRICA DEL SUR', la: -15, lo: -65 },
+  { n: 'AMÉRICA CENTRAL', la: 12, lo: -86 },
+  { n: 'NORTEAMÉRICA', la: 45, lo: -100 },
+  { n: 'ASIA', la: 40, lo: 105 },
+  { n: 'ÁFRICA', la: 5, lo: 22 },
+  { n: 'EUROPA', la: 50, lo: 10 },
+  { n: 'AUSTRALIA', la: -25, lo: 134 },
+  { n: 'ANTÁRTIDA', la: -75, lo: 0 },
+];
+regionLabels.forEach(function(c) {
+  var pos = latLngToPos(c.la, c.lo, R * 1.003);
+  var div = document.createElement('div');
+  div.textContent = c.n;
+  div.style.color = 'rgba(255,255,255,0.25)';
+  div.style.fontSize = '11px';
+  div.style.fontFamily = 'Arial, sans-serif';
+  div.style.fontWeight = '600';
+  div.style.letterSpacing = '3px';
+  div.style.textShadow = '0 0 12px rgba(0,0,0,0.95)';
+  div.style.whiteSpace = 'nowrap';
+  div.style.pointerEvents = 'none';
   var label = new CSS2DObject(div);
   label.position.copy(pos);
   label.userData.normal = pos.clone().normalize();
@@ -836,9 +896,9 @@ countryNames.forEach(function(c) {
   var div = document.createElement('div');
   div.textContent = c.n;
   div.style.color = 'rgba(255,255,255,0.5)';
-  div.style.fontSize = '9px';
+  div.style.fontSize = '11px';
   div.style.fontFamily = 'Arial, sans-serif';
-  div.style.fontWeight = '400';
+  div.style.fontWeight = '500';
   div.style.textTransform = 'uppercase';
   div.style.letterSpacing = '0.5px';
   div.style.textShadow = '0 0 6px rgba(0,0,0,0.9)';
@@ -941,7 +1001,7 @@ fetch('https://raw.githubusercontent.com/fraxen/tectonicplates/master/GeoJSON/PB
       var div = document.createElement('div');
       div.textContent = name.indexOf('Placa') === -1 ? 'Placa ' + name : name;
       div.style.color = 'rgba(255,102,51,0.55)';
-      div.style.fontSize = '9px';
+      div.style.fontSize = '11px';
       div.style.fontFamily = 'Arial, sans-serif';
       div.style.fontWeight = '600';
       div.style.letterSpacing = '0.5px';
@@ -1068,20 +1128,23 @@ function animate() {
   _camDir.copy(camera.position).normalize();
   for (var i = 0; i < cityLabels.length; i++) {
     var lbl = cityLabels[i];
-    lbl.visible = lbl.userData.normal.dot(_camDir) > 0;
+    var vis = lbl.userData.normal.dot(_camDir);
+    lbl.visible = vis > -0.1;
   }
   for (var i = 0; i < countryLabels.length; i++) {
     var lbl = countryLabels[i];
-    lbl.visible = lbl.userData.normal.dot(_camDir) > 0;
+    var vis = lbl.userData.normal.dot(_camDir);
+    lbl.visible = vis > -0.1;
   }
   for (var i = 0; i < plateLabels.length; i++) {
     var lbl = plateLabels[i];
-    lbl.visible = lbl.userData.normal.dot(_camDir) > 0;
+    var vis = lbl.userData.normal.dot(_camDir);
+    lbl.visible = vis > -0.1;
   }
   for (var i = 0; i < quakeGroup.children.length; i++) {
     var q = quakeGroup.children[i];
     if (q.userData.normal) {
-      q.visible = q.userData.normal.dot(_camDir) > 0;
+      q.visible = q.userData.normal.dot(_camDir) > -0.1;
     }
   }
 
