@@ -1300,8 +1300,8 @@ localStorage.setItem('geosism_v', v);
 var el = document.getElementById('visita-count');
 function showV(n) { if(el) el.textContent = 'V: ' + n; }
 showV(v);
-fetch('https://api.countapi.xyz/hit/geosism-globo/visits').then(function(r){return r.json();}).then(function(d){
-  var total = Math.max(v, d.value);
+fetch('https://countapi.mileshilliard.com/api/v1/hit/geosism_globo_visits').then(function(r){return r.json();}).then(function(d){
+  var total = Math.max(v, parseInt(d.value) || 0);
   localStorage.setItem('geosism_v', total);
   showV(total);
 }).catch(function(){});
