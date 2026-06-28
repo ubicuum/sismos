@@ -3,6 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="GEOSISM — Monitoreo sísmico global 3D en tiempo real. Visualiza terremotos del USGS y CSN Chile en un globo terráqueo interactivo con placas tectónicas, epicentros y datos actualizados.">
+<meta name="keywords" content="sismos, terremotos, monitoreo sísmico, USGS, CSN Chile, 3D globe, placas tectónicas, geosism, mapa sísmico">
+<meta name="author" content="Abraham Seguel Vorpahl">
+<meta property="og:title" content="GEOSISM — Globo Sísmico 3D">
+<meta property="og:description" content="Monitoreo sísmico global interactivo. Visualiza terremotos en tiempo real sobre un globo 3D con placas tectónicas y datos de USGS + CSN Chile.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://ubicuum.github.io/sismos/">
+<meta name="twitter:card" content="summary_large_image">
 <title>GEOSISM — Globo Sísmico 3D</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='48' fill='%2308080e' stroke='%2300f3ff' stroke-width='2'/%3E%3Ccircle cx='50' cy='50' r='38' fill='none' stroke='%2300f3ff' stroke-width='4' stroke-dasharray='4 4'/%3E%3Ccircle cx='50' cy='50' r='25' fill='none' stroke='%2300f3ff' stroke-width='3'/%3E%3Ccircle cx='50' cy='50' r='10' fill='%2300f3ff'/%3E%3C/svg%3E">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -495,16 +503,16 @@ import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
 import { LineGeometry } from 'three/addons/lines/LineGeometry.js';
 
 var getHex = function(mag) {
-  if (mag >= 6) return 0xef4444;
-  if (mag >= 4.5) return 0xfb923c;
-  if (mag >= 3) return 0xfacc15;
-  return 0x4ade80;
+  if (mag >= 6) return 0xff0033;
+  if (mag >= 4.5) return 0xff6600;
+  if (mag >= 3) return 0xffee00;
+  return 0x00ff66;
 };
 var getStyle = function(mag) {
-  if (mag >= 6) return '#ef4444';
-  if (mag >= 4.5) return '#fb923c';
-  if (mag >= 3) return '#facc15';
-  return '#4ade80';
+  if (mag >= 6) return '#ff0033';
+  if (mag >= 4.5) return '#ff6600';
+  if (mag >= 3) return '#ffee00';
+  return '#00ff66';
 };
 
 // Scene
@@ -984,7 +992,20 @@ function buildQuakes(points) {
     var s = 0.25 + mag * 0.12;
     var hex = getHex(mag);
 
-    // Color fill circle (by magnitude)
+    // Neon glow halo (larger, semi-transparent)
+    var glowMat = new THREE.MeshBasicMaterial({
+      color: hex, side: THREE.DoubleSide, transparent: true, opacity: 0.12,
+      depthWrite: false, depthTest: true,
+    });
+    var glow = new THREE.Mesh(_circleGeo, glowMat);
+    glow.position.copy(pos);
+    _alignQ.setFromUnitVectors(_zAxis, norm);
+    glow.quaternion.copy(_alignQ);
+    glow.scale.set(s * 2.5, s * 2.5, s * 2.5);
+    glow.renderOrder = 0;
+    quakeGroup.add(glow);
+
+    // Color fill circle (by magnitude — neon)
     var fillMat = new THREE.MeshBasicMaterial({
       color: hex, side: THREE.DoubleSide, depthWrite: true, depthTest: true,
     });
