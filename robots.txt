@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://ubicuum.github.io/sismos/sitemap.xml
