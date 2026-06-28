@@ -570,116 +570,79 @@ function makeEarthTex() {
   c.width = W; c.height = H;
   var ctx = c.getContext('2d');
 
-  // Ocean with depth gradient
-  var og = ctx.createLinearGradient(0, 0, 0, H);
-  og.addColorStop(0, '#0a2a5a');
-  og.addColorStop(0.15, '#0c3560');
-  og.addColorStop(0.5, '#0d3d6b');
-  og.addColorStop(0.85, '#0c3560');
-  og.addColorStop(1, '#0a2a5a');
-  ctx.fillStyle = og;
+  // Deep ocean
+  ctx.fillStyle = '#0a2555';
   ctx.fillRect(0, 0, W, H);
 
+  var lng2x = function(l) { return (l+180)/360*W; };
+  var lat2y = function(l) { return (90-l)/180*H; };
   var ll2xy = function(lng, lat) { return [(lng+180)/360*W, (90-lat)/180*H]; };
 
-  // More detailed continent polygons (interpolated with Catmull-Rom style smoothing)
-  function smoothPts(pts, steps) {
-    steps = steps || 3;
-    var out = [];
-    for (var i = 0; i < pts.length; i++) {
-      var p0 = pts[(i-1+pts.length)%pts.length];
-      var p1 = pts[i];
-      var p2 = pts[(i+1)%pts.length];
-      var p3 = pts[(i+2)%pts.length];
-      out.push(p1);
-      for (var s = 1; s <= steps; s++) {
-        var t = s / (steps + 1);
-        var x = 0.5*((2*p1[0]) + (-p0[0]+p2[0])*t + (2*p0[0]-5*p1[0]+4*p2[0]-p3[0])*t*t + (-p0[0]+3*p1[0]-3*p2[0]+p3[0])*t*t*t);
-        var y = 0.5*((2*p1[1]) + (-p0[1]+p2[1])*t + (2*p0[1]-5*p1[1]+4*p2[1]-p3[1])*t*t + (-p0[1]+3*p1[1]-3*p2[1]+p3[1])*t*t*t);
-        out.push([x, y]);
-      }
-    }
-    return out;
+  // Latitude lines every 15°
+  ctx.strokeStyle = 'rgba(60,120,200,0.12)';
+  ctx.lineWidth = 1;
+  for (var lat = -75; lat <= 75; lat += 15) {
+    ctx.beginPath();
+    ctx.moveTo(0, lat2y(lat));
+    ctx.lineTo(W, lat2y(lat));
+    ctx.stroke();
   }
+  // Longitude lines every 15°
+  for (var lng = -180; lng < 180; lng += 15) {
+    ctx.beginPath();
+    ctx.moveTo(lng2x(lng), 0);
+    ctx.lineTo(lng2x(lng), H);
+    ctx.stroke();
+  }
+  // Equator slightly brighter
+  ctx.strokeStyle = 'rgba(80,160,240,0.2)';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(0, lat2y(0)); ctx.lineTo(W, lat2y(0)); ctx.stroke();
+
+  // Continent coastlines as thin white outlines
+  ctx.strokeStyle = 'rgba(180,220,255,0.25)';
+  ctx.lineWidth = 1;
 
   var conts = [
-    // North America (~130 pts)
     [[-168,66],[-165,60],[-152,58],[-140,60],[-128,58],[-120,55],[-118,50],[-124,45],[-122,37],[-118,33],[-115,30],
      [-105,25],[-98,20],[-90,18],[-88,14],[-82,10],[-80,8],[-78,10],[-80,15],[-82,22],[-85,25],[-90,28],[-98,30],
      [-105,32],[-110,32],[-115,35],[-120,38],[-124,40],[-125,45],[-126,55],[-122,60],[-130,62],[-140,62],[-150,60],
      [-160,62],[-165,65]],
-    // Central America
     [[-105,25],[-98,20],[-92,17],[-88,14],[-85,10],[-84,12],[-86,15],[-88,18],[-90,20],[-95,22],[-100,24]],
-    // South America
     [[-80,10],[-75,8],[-68,8],[-60,5],[-52,2],[-50,-2],[-48,-5],[-48,-15],[-50,-22],[-53,-28],[-57,-33],[-60,-35],
      [-62,-38],[-65,-40],[-68,-42],[-70,-44],[-72,-50],[-75,-55],[-72,-50],[-68,-42],[-65,-38],[-63,-35],[-60,-30],
      [-58,-25],[-57,-20],[-58,-10],[-60,-5],[-65,0],[-70,2],[-75,5],[-78,8],[-80,10]],
-    // Europe
     [[-10,58],[-5,55],[0,52],[2,48],[5,44],[8,42],[10,44],[12,46],[15,45],[18,44],[20,46],[22,48],[25,50],[28,52],
      [25,55],[22,56],[20,58],[18,60],[15,62],[12,64],[10,65],[8,64],[5,62],[0,60],[-5,58]],
-    // Africa
     [[-17,35],[-15,30],[-10,28],[-5,25],[-2,20],[0,15],[5,10],[10,5],[12,0],[15,-5],[18,-10],[20,-15],[22,-20],
      [25,-25],[28,-30],[30,-32],[32,-34],[35,-34],[38,-33],[40,-30],[42,-25],[44,-20],[45,-15],[43,-10],[40,-5],
      [38,0],[35,5],[33,10],[30,15],[28,20],[25,25],[22,28],[18,30],[15,32],[12,33],[10,35],[5,37],[0,37],[-5,36],
      [-10,35],[-15,35]],
-    // Russia / North Asia
     [[20,70],[30,68],[35,65],[40,60],[45,55],[50,52],[55,50],[60,48],[65,47],[70,45],[75,42],[80,40],[85,42],[90,45],
      [95,48],[100,50],[105,52],[110,55],[115,58],[120,60],[125,62],[130,65],[135,68],[140,70],[145,72],[150,68],
      [145,62],[140,58],[135,55],[130,52],[125,50],[120,48],[115,47],[110,45],[105,43],[100,42],[95,40],[90,42],
      [85,44],[80,45],[75,47],[70,48],[65,50],[60,52],[55,54],[50,55],[45,55],[40,58],[35,60],[30,62],[25,65],[20,68]],
-    // China / East Asia
     [[80,48],[82,45],[85,42],[88,40],[90,38],[92,35],[95,30],[98,28],[100,25],[102,22],[105,20],[108,18],[110,15],
      [112,18],[115,20],[118,22],[120,25],[122,30],[120,35],[118,38],[115,40],[112,42],[110,45],[108,48],[105,50],
      [100,50],[95,48],[90,47],[85,48],[80,48]],
-    // India
-    [[68,30],[70,25],[72,20],[75,15],[78,10],[80,8],[82,10],[85,15],[87,20],[88,25],[85,28],[82,30],[78,32],[75,32],[72,30],[70,30]],
-    // SE Asia + Indonesia
+    [[68,30],[70,25],[72,20],[75,15],[78,10],[80,8],[82,10],[85,15],[87,20],[88,25],[85,28],[82,30],[78,32],[75,32],
+     [72,30],[70,30]],
     [[95,25],[98,22],[100,20],[102,18],[105,17],[107,15],[110,12],[112,10],[115,8],[118,5],[120,0],[118,-2],
      [115,-5],[112,-8],[110,-8],[108,-6],[106,-5],[104,-8],[102,-5],[100,-2],[98,0],[96,2],[95,5],[97,8],
      [100,10],[102,12],[105,15],[103,18],[100,20],[98,22],[95,24]],
-    // Australia
     [[113,-12],[115,-15],[118,-18],[120,-20],[122,-22],[125,-25],[128,-28],[130,-30],[132,-32],[135,-35],
      [138,-38],[140,-38],[142,-37],[145,-35],[147,-33],[148,-30],[150,-28],[150,-25],[148,-22],[145,-20],
      [142,-18],[140,-16],[138,-15],[135,-14],[132,-12],[130,-12],[128,-13],[125,-12],[122,-11],[118,-11],[115,-12]],
-    // Greenland
     [[-55,82],[-52,78],[-48,76],[-42,72],[-38,70],[-35,68],[-32,70],[-30,72],[-28,75],[-25,78],[-30,82],
      [-35,83],[-40,82],[-45,82],[-50,82],[-55,82]],
-    // Antarctica
     [[-180,-65],[-170,-65],[-160,-65],[-150,-65],[-140,-65],[-130,-65],[-120,-65],[-110,-65],[-100,-65],
      [-90,-65],[-80,-65],[-70,-65],[-60,-65],[-50,-65],[-40,-65],[-30,-65],[-20,-65],[-10,-65],[0,-65],
      [10,-65],[20,-65],[30,-65],[40,-65],[50,-65],[60,-65],[70,-65],[80,-65],[90,-65],[100,-65],[110,-65],
      [120,-65],[130,-65],[140,-65],[150,-65],[160,-65],[170,-65],[180,-65]],
-    // Middle East
     [[35,30],[40,28],[42,25],[44,22],[48,18],[50,15],[52,18],[54,20],[56,22],[55,25],[52,28],[48,30],[45,32],[40,32],[36,32]],
-    // Caribbean islands
-    [[-75,20],[-72,18],[-70,20],[-72,22],[-75,21]],
-    [[-68,18],[-66,17],[-64,18],[-66,19]],
   ];
 
-  // Draw land with elevation-like shading
   conts.forEach(function(pts) {
-    var s = smoothPts(pts, 2);
-    ctx.beginPath();
-    s.forEach(function(p, i) {
-      var xy = ll2xy(p[0], p[1]);
-      if (i === 0) ctx.moveTo(xy[0], xy[1]);
-      else ctx.lineTo(xy[0], xy[1]);
-    });
-    ctx.closePath();
-    var grad = ctx.createRadialGradient(
-      ll2xy(0,0)[0], ll2xy(0,0)[1], 0,
-      ll2xy(0,0)[0], ll2xy(0,0)[1], W*0.5
-    );
-    grad.addColorStop(0, '#5a9a4a');
-    grad.addColorStop(0.4, '#4a8a3d');
-    grad.addColorStop(0.7, '#3d7a30');
-    grad.addColorStop(1, '#2d6a25');
-    ctx.fillStyle = grad;
-    ctx.fill();
-  });
-
-  // Desert/sand belts
-  function drawDesertBelt(pts) {
     ctx.beginPath();
     pts.forEach(function(p, i) {
       var xy = ll2xy(p[0], p[1]);
@@ -687,14 +650,8 @@ function makeEarthTex() {
       else ctx.lineTo(xy[0], xy[1]);
     });
     ctx.closePath();
-    ctx.fillStyle = '#c4a86a';
-    ctx.globalAlpha = 0.4;
-    ctx.fill();
-    ctx.globalAlpha = 1;
-  }
-  drawDesertBelt([[-15,25],[-10,20],[0,15],[10,18],[15,20],[20,22],[25,22],[30,20],[35,18],[40,18],[45,20],[50,22],[55,24],[55,28],[50,25],[45,22],[40,22],[35,25],[30,28],[25,28],[20,25],[15,28],[10,30],[5,30],[0,28],[-5,30],[-10,28],[-15,25]]);
-  drawDesertBelt([[-120,35],[-115,32],[-110,30],[-105,25],[-100,22],[-95,20],[-90,18],[-85,20],[-80,22],[-85,25],[-90,28],[-95,30],[-100,32],[-105,35],[-110,36],[-115,35],[-120,35]]);
-  drawDesertBelt([[135,-25],[140,-25],[145,-25],[148,-27],[150,-30],[148,-32],[145,-30],[140,-28],[135,-25]]);
+    ctx.stroke();
+  });
 
   return c;
 }
@@ -731,60 +688,26 @@ tryLoadTex();
 
 // City labels
 var cities = [
-  { name: 'Santiago', lat: -33.45, lng: -70.67 }, { name: 'Buenos Aires', lat: -34.60, lng: -58.38 },
+  { name: 'Santiago', lat: -33.45, lng: -70.67 }, { name: 'Valdivia', lat: -39.81, lng: -73.25 },
+  { name: 'Concepción', lat: -36.83, lng: -73.05 }, { name: 'Antofagasta', lat: -23.65, lng: -70.40 },
+  { name: 'Iquique', lat: -20.21, lng: -70.15 }, { name: 'Buenos Aires', lat: -34.60, lng: -58.38 },
   { name: 'Lima', lat: -12.05, lng: -77.03 }, { name: 'Bogotá', lat: 4.71, lng: -74.07 },
+  { name: 'Caracas', lat: 10.48, lng: -66.90 }, { name: 'Quito', lat: -0.18, lng: -78.47 },
   { name: 'México DF', lat: 19.43, lng: -99.13 }, { name: 'Nueva York', lat: 40.71, lng: -74.01 },
-  { name: 'São Paulo', lat: -23.55, lng: -46.63 }, { name: 'Londres', lat: 51.51, lng: -0.13 },
+  { name: 'Los Ángeles', lat: 34.05, lng: -118.24 }, { name: 'São Paulo', lat: -23.55, lng: -46.63 },
+  { name: 'Río de Janeiro', lat: -22.91, lng: -43.17 }, { name: 'Londres', lat: 51.51, lng: -0.13 },
   { name: 'Madrid', lat: 40.42, lng: -3.70 }, { name: 'París', lat: 48.86, lng: 2.35 },
   { name: 'Berlín', lat: 52.52, lng: 13.41 }, { name: 'Moscú', lat: 55.76, lng: 37.62 },
+  { name: 'Roma', lat: 41.90, lng: 12.50 }, { name: 'Estambul', lat: 41.01, lng: 28.98 },
   { name: 'Pekín', lat: 39.91, lng: 116.40 }, { name: 'Tokio', lat: 35.68, lng: 139.69 },
-  { name: 'Seúl', lat: 37.57, lng: 126.98 }, { name: 'El Cairo', lat: 30.04, lng: 31.24 },
-  { name: 'Sídney', lat: -33.87, lng: 151.21 }, { name: 'Los Ángeles', lat: 34.05, lng: -118.24 },
-  { name: 'Miami', lat: 25.76, lng: -80.19 }, { name: 'Shanghái', lat: 31.23, lng: 121.47 },
-  { name: 'Estambul', lat: 41.01, lng: 28.98 }, { name: 'Dubái', lat: 25.20, lng: 55.27 },
-  { name: 'Singapur', lat: 1.35, lng: 103.82 }, { name: 'Caracas', lat: 10.48, lng: -66.90 },
-  { name: 'Nueva Delhi', lat: 28.61, lng: 77.23 }, { name: 'Bangkok', lat: 13.76, lng: 100.50 },
-  { name: 'Johannesburgo', lat: -26.20, lng: 28.05 }, { name: 'Río de Janeiro', lat: -22.91, lng: -43.17 },
-  { name: 'Casablanca', lat: 33.57, lng: -7.58 }, { name: 'Roma', lat: 41.90, lng: 12.50 },
-  { name: 'Viena', lat: 48.21, lng: 16.37 }, { name: 'Varsovia', lat: 52.23, lng: 21.01 },
-  { name: 'Estocolmo', lat: 59.33, lng: 18.07 }, { name: 'Atenas', lat: 37.98, lng: 23.73 },
-  { name: 'Lisboa', lat: 38.72, lng: -9.13 }, { name: 'Dublín', lat: 53.35, lng: -6.26 },
-  { name: 'Toronto', lat: 43.65, lng: -79.38 }, { name: 'La Habana', lat: 23.13, lng: -82.38 },
-  { name: 'Santo Domingo', lat: 18.49, lng: -69.93 }, { name: 'San Juan', lat: 18.47, lng: -66.11 },
+  { name: 'Shanghái', lat: 31.23, lng: 121.47 }, { name: 'Hong Kong', lat: 22.32, lng: 114.17 },
+  { name: 'Seúl', lat: 37.57, lng: 126.98 }, { name: 'Nueva Delhi', lat: 28.61, lng: 77.23 },
+  { name: 'Bangkok', lat: 13.76, lng: 100.50 }, { name: 'Singapur', lat: 1.35, lng: 103.82 },
   { name: 'Yakarta', lat: -6.21, lng: 106.85 }, { name: 'Manila', lat: 14.60, lng: 120.98 },
-  { name: 'Hong Kong', lat: 22.32, lng: 114.17 }, { name: 'Nairobi', lat: -1.29, lng: 36.82 },
-  { name: 'Lagos', lat: 6.52, lng: 3.38 }, { name: 'Kinshasa', lat: -4.33, lng: 15.32 },
-  { name: 'Perth', lat: -31.95, lng: 115.86 }, { name: 'Auckland', lat: -36.85, lng: 174.76 },
-  { name: 'Valdivia', lat: -39.81, lng: -73.25 }, { name: 'Concepción', lat: -36.83, lng: -73.05 },
-  { name: 'Antofagasta', lat: -23.65, lng: -70.40 }, { name: 'Iquique', lat: -20.21, lng: -70.15 },
-  { name: 'Viña del Mar', lat: -33.02, lng: -71.55 }, { name: 'Arica', lat: -18.47, lng: -70.31 },
-  { name: 'Rancagua', lat: -34.17, lng: -70.74 }, { name: 'Talca', lat: -35.43, lng: -71.67 },
-  { name: 'Temuco', lat: -38.73, lng: -72.59 }, { name: 'Osorno', lat: -40.57, lng: -73.13 },
-  { name: 'Copiapo', lat: -27.37, lng: -70.33 }, { name: 'La Serena', lat: -29.90, lng: -71.25 },
-  { name: 'San Pedro', lat: -42.46, lng: -73.01 }, { name: 'Talca', lat: -35.43, lng: -71.67 },
-  { name: 'Cusco', lat: -13.52, lng: -71.97 }, { name: 'Arequipa', lat: -16.40, lng: -71.54 },
-  { name: 'Medellín', lat: 6.25, lng: -75.56 }, { name: 'Quito', lat: -0.18, lng: -78.47 },
-  { name: 'Guayaquil', lat: -2.17, lng: -79.89 }, { name: 'La Paz', lat: -16.50, lng: -68.15 },
-  { name: 'Asunción', lat: -25.26, lng: -57.58 }, { name: 'Montevideo', lat: -34.90, lng: -56.19 },
-  { name: 'Porto Alegre', lat: -30.03, lng: -51.23 }, { name: 'Río de Janeiro', lat: -22.91, lng: -43.17 },
-  { name: 'Salvador', lat: -12.97, lng: -38.50 }, { name: 'Brasília', lat: -15.79, lng: -47.88 },
-  { name: 'Manaus', lat: -3.12, lng: -60.02 }, { name: 'Panamá', lat: 8.98, lng: -79.52 },
-  { name: 'San José', lat: 9.93, lng: -84.09 }, { name: 'Guatemala', lat: 14.63, lng: -90.51 },
-  { name: 'Chicago', lat: 41.88, lng: -87.63 }, { name: 'San Francisco', lat: 37.77, lng: -122.42 },
-  { name: 'Vancouver', lat: 49.28, lng: -123.12 }, { name: 'Anchorage', lat: 61.22, lng: -149.90 },
-  { name: 'Roma', lat: 41.90, lng: 12.50 }, { name: 'Barcelona', lat: 41.39, lng: 2.17 },
-  { name: 'Atenas', lat: 37.98, lng: 23.73 }, { name: 'Tel Aviv', lat: 32.09, lng: 34.78 },
-  { name: 'Riad', lat: 24.71, lng: 46.67 }, { name: 'Teherán', lat: 35.69, lng: 51.39 },
-  { name: 'Islamabad', lat: 33.73, lng: 73.07 }, { name: 'Bombay', lat: 19.08, lng: 72.88 },
-  { name: 'Kolkata', lat: 22.57, lng: 88.36 }, { name: 'Chennai', lat: 13.08, lng: 80.27 },
-  { name: 'Kuala Lumpur', lat: 3.14, lng: 101.69 }, { name: 'Hanói', lat: 21.03, lng: 105.85 },
-  { name: 'Taipéi', lat: 25.03, lng: 121.56 }, { name: 'Osaka', lat: 34.69, lng: 135.50 },
-  { name: 'Rangún', lat: 16.84, lng: 96.17 }, { name: 'Daca', lat: 23.81, lng: 90.41 },
-  { name: 'Kabul', lat: 34.53, lng: 69.17 }, { name: 'Bagdad', lat: 33.32, lng: 44.42 },
-  { name: 'Johannesburgo', lat: -26.20, lng: 28.04 }, { name: 'Argel', lat: 36.75, lng: 3.04 },
-  { name: 'Casablanca', lat: 33.57, lng: -7.59 }, { name: 'Dakar', lat: 14.72, lng: -17.47 },
-  { name: 'Adís Abeba', lat: 9.03, lng: 38.74 }, { name: 'Dar es Salaam', lat: -6.79, lng: 39.27 },
-  { name: 'Luanda', lat: -8.84, lng: 13.29 }, { name: 'Maputo', lat: -25.97, lng: 32.57 },
+  { name: 'Sídney', lat: -33.87, lng: 151.21 }, { name: 'Auckland', lat: -36.85, lng: 174.76 },
+  { name: 'El Cairo', lat: 30.04, lng: 31.24 }, { name: 'Casablanca', lat: 33.57, lng: -7.58 },
+  { name: 'Johannesburgo', lat: -26.20, lng: 28.05 }, { name: 'Nairobi', lat: -1.29, lng: 36.82 },
+  { name: 'Dubái', lat: 25.20, lng: 55.27 }, { name: 'Tel Aviv', lat: 32.09, lng: 34.78 },
 ];
 
 function latLngToPos(lat, lng, r) {
