@@ -929,7 +929,7 @@ jsonCacheFetch(BORDER_URL, 'borders')
   .catch(function() {});
 
 // Maritime boundaries — neon cyan transparent (EEZ)
-var maritimeMat = new LineMaterial({ color: 0x44ddff, linewidth: 1, resolution: lineRes, transparent: true, opacity: 0.2, depthTest: true, depthWrite: false });
+var maritimeMat = new LineMaterial({ color: 0x44ddff, linewidth: 2, resolution: lineRes, transparent: true, opacity: 0.5, depthTest: true, depthWrite: false });
 var MARITIME_URL = 'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_maritime_boundary.geojson';
 jsonCacheFetch(MARITIME_URL, 'maritime')
   .then(function(data) {
