@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="50%" r="60%">
+      <stop offset="0%" stop-color="#0a0a1a"/>
+      <stop offset="100%" stop-color="#020208"/>
+    </radialGradient>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#00f3ff" stop-opacity="0.1"/>
+      <stop offset="100%" stop-color="#00f3ff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <circle cx="600" cy="315" r="280" fill="url(#glow)"/>
+  <!-- Globe circle -->
+  <circle cx="380" cy="315" r="160" fill="none" stroke="#00f3ff" stroke-width="1.5" opacity="0.3"/>
+  <!-- Lat/lng grid -->
+  <ellipse cx="380" cy="315" rx="160" ry="60" fill="none" stroke="#00f3ff" stroke-width="0.8" opacity="0.2"/>
+  <ellipse cx="380" cy="315" rx="80" ry="160" fill="none" stroke="#00f3ff" stroke-width="0.8" opacity="0.2"/>
+  <line x1="220" y1="315" x2="540" y2="315" stroke="#00f3ff" stroke-width="0.8" opacity="0.2"/>
+  <line x1="380" y1="155" x2="380" y2="475" stroke="#00f3ff" stroke-width="0.8" opacity="0.2"/>
+  <!-- Plate boundary arcs -->
+  <path d="M300 250 Q340 230 370 260 Q400 290 430 270 Q460 250 480 280" fill="none" stroke="#ff6633" stroke-width="3" opacity="0.5"/>
+  <path d="M280 380 Q320 420 370 390 Q420 360 460 400" fill="none" stroke="#ff6633" stroke-width="3" opacity="0.5"/>
+  <path d="M240 300 Q280 280 310 310 Q340 340 370 320" fill="none" stroke="#ff6633" stroke-width="3" opacity="0.5"/>
+  <path d="M440 250 Q470 270 500 260" fill="none" stroke="#ff6633" stroke-width="3" opacity="0.5"/>
+  <!-- Earthquake markers -->
+  <circle cx="310" cy="280" r="6" fill="#ff0033" opacity="0.8"/>
+  <circle cx="310" cy="280" r="14" fill="#ff0033" opacity="0.12"/>
+  <circle cx="420" cy="360" r="5" fill="#ff6600" opacity="0.8"/>
+  <circle cx="420" cy="360" r="12" fill="#ff6600" opacity="0.12"/>
+  <circle cx="350" cy="340" r="4" fill="#ffee00" opacity="0.8"/>
+  <circle cx="350" cy="340" r="10" fill="#ffee00" opacity="0.12"/>
+  <circle cx="450" cy="290" r="3" fill="#00ff66" opacity="0.8"/>
+  <circle cx="450" cy="290" r="7" fill="#00ff66" opacity="0.12"/>
+  <!-- South America hint -->
+  <path d="M340 300 Q350 320 345 350 Q340 370 350 380" fill="none" stroke="#44ddff" stroke-width="2" opacity="0.4"/>
+  <!-- Title -->
+  <text x="610" y="260" font-family="Orbitron,monospace" font-size="48" font-weight="800" fill="#00f3ff" letter-spacing="6">GEOSISM</text>
+  <text x="610" y="310" font-family="Inter,sans-serif" font-size="22" fill="#667788" letter-spacing="4">MONITOREO SÍSMICO 3D</text>
+  <line x1="610" y1="335" x2="880" y2="335" stroke="#00f3ff" stroke-width="1" opacity="0.3"/>
+  <text x="610" y="370" font-family="Inter,sans-serif" font-size="15" fill="#556677" letter-spacing="2">USGS + CSN Chile · Tiempo real</text>
+  <text x="610" y="400" font-family="Inter,sans-serif" font-size="13" fill="#445566" letter-spacing="1">Terremotos · Placas tectónicas · Globo interactivo</text>
+  <!-- Neon legend -->
+  <circle cx="610" cy="440" r="4" fill="#00ff66"/>
+  <text x="620" y="444" font-family="Inter,sans-serif" font-size="11" fill="#8899aa">Magnitud &lt; 3</text>
+  <circle cx="700" cy="440" r="4" fill="#ffee00"/>
+  <text x="710" y="444" font-family="Inter,sans-serif" font-size="11" fill="#8899aa">3–4.5</text>
+  <circle cx="780" cy="440" r="4" fill="#ff6600"/>
+  <text x="790" y="444" font-family="Inter,sans-serif" font-size="11" fill="#8899aa">4.5–6</text>
+  <circle cx="870" cy="440" r="4" fill="#ff0033"/>
+  <text x="880" y="444" font-family="Inter,sans-serif" font-size="11" fill="#8899aa">≥ 6</text>
+  <!-- Footer -->
+  <text x="610" y="510" font-family="Inter,sans-serif" font-size="11" fill="#334455" letter-spacing="1">ubicuum.github.io/sismos</text>
+  <!-- Decorative scan lines -->
+  <line x1="0" y1="0" x2="1200" y2="0" stroke="#00f3ff" stroke-width="0.5" opacity="0.08"/>
+  <line x1="0" y1="629" x2="1200" y2="629" stroke="#00f3ff" stroke-width="0.5" opacity="0.08"/>
+</svg>

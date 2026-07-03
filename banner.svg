@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60">
+  <rect width="200" height="60" rx="6" fill="#08080e"/>
+  <rect x="1" y="1" width="198" height="58" rx="5" fill="none" stroke="#00f3ff" stroke-width="1" opacity="0.3"/>
+  <circle cx="22" cy="30" r="16" fill="none" stroke="#00f3ff" stroke-width="1.5" opacity="0.4"/>
+  <circle cx="22" cy="30" r="10" fill="none" stroke="#00f3ff" stroke-width="2" stroke-dasharray="2 2"/>
+  <circle cx="22" cy="30" r="4" fill="#00f3ff"/>
+  <line x1="22" y1="14" x2="22" y2="20" stroke="#00f3ff" stroke-width="1" opacity="0.5"/>
+  <line x1="22" y1="40" x2="22" y2="46" stroke="#00f3ff" stroke-width="1" opacity="0.5"/>
+  <line x1="6" y1="30" x2="12" y2="30" stroke="#00f3ff" stroke-width="1" opacity="0.5"/>
+  <line x1="32" y1="30" x2="38" y2="30" stroke="#00f3ff" stroke-width="1" opacity="0.5"/>
+  <circle cx="22" cy="30" r="1.5" fill="#00ff66" opacity="0.8"/>
+  <circle cx="22" cy="30" r="3" fill="#00ff66" opacity="0.2"/>
+  <text x="48" y="24" font-family="Orbitron,monospace" font-size="11" font-weight="700" fill="#00f3ff" letter-spacing="2">GEOSISM</text>
+  <text x="48" y="42" font-family="Inter,sans-serif" font-size="9" fill="#8899aa" letter-spacing="1">MONITOREO SÍSMICO 3D</text>
+  <circle cx="178" cy="20" r="3" fill="#ff6600" opacity="0.9"/>
+  <circle cx="178" cy="20" r="7" fill="#ff6600" opacity="0.15"/>
+  <circle cx="188" cy="20" r="3" fill="#00ff66" opacity="0.9"/>
+  <circle cx="188" cy="20" r="7" fill="#00ff66" opacity="0.15"/>
+  <circle cx="183" cy="38" r="3" fill="#ff0033" opacity="0.9"/>
+  <circle cx="183" cy="38" r="7" fill="#ff0033" opacity="0.15"/>
+</svg>
