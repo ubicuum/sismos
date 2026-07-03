@@ -1306,6 +1306,14 @@ document.querySelectorAll('.layer-btn').forEach(function(btn) {
       var on = this.classList.contains('active');
       earthMat.map = on && texLoader._satTex ? texLoader._satTex : extTex;
       earthMat.needsUpdate = true;
+      // Sin satélite se activan fronteras automáticamente
+      if (!on) {
+        var bBtn = document.querySelector('.layer-btn[data-layer="borders"]');
+        if (bBtn && !bBtn.classList.contains('active')) {
+          bBtn.classList.add('active');
+          borderGroup.visible = true;
+        }
+      }
       return;
     }
     this.classList.toggle('active');
