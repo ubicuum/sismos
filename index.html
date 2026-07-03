@@ -928,6 +928,33 @@ jsonCacheFetch(BORDER_URL, 'borders')
   })
   .catch(function() {});
 
+// Maritime boundaries — neon cyan transparent (EEZ)
+var maritimeMat = new LineMaterial({ color: 0x44ddff, linewidth: 1, resolution: lineRes, transparent: true, opacity: 0.2, depthTest: true, depthWrite: false });
+var MARITIME_URL = 'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_maritime_boundary.geojson';
+jsonCacheFetch(MARITIME_URL, 'maritime')
+  .then(function(data) {
+    if (!data.features) return;
+    for (var f = 0; f < data.features.length; f++) {
+      var geom = data.features[f].geometry;
+      if (!geom) continue;
+      var coords = geom.type === 'MultiLineString' ? geom.coordinates : [geom.coordinates];
+      for (var c = 0; c < coords.length; c++) {
+        var pos = [];
+        for (var p = 0; p < coords[c].length; p++) {
+          var lng = coords[c][p][0], lat = coords[c][p][1];
+          var v = latLngToPos(lat, lng, R + 0.1);
+          pos.push(v.x, v.y, v.z);
+        }
+        if (pos.length >= 6) {
+          var g = new LineGeometry();
+          g.setPositions(pos);
+          borderGroup.add(new Line2(g, maritimeMat));
+        }
+      }
+    }
+  })
+  .catch(function() {});
+
 // Tectonic plates — neon orange
 var plateMat = new LineMaterial({ color: 0xff6633, linewidth: 3, resolution: lineRes, transparent: true, opacity: 0.6, depthTest: true, depthWrite: false });
 var plateLabels = [];
@@ -1109,6 +1136,7 @@ window.addEventListener('resize', function() {
   labelRenderer.setSize(window.innerWidth, window.innerHeight);
   lineRes.set(window.innerWidth, window.innerHeight);
   borderMat.resolution.copy(lineRes);
+  maritimeMat.resolution.copy(lineRes);
   plateMat.resolution.copy(lineRes);
 });
 
