@@ -212,12 +212,13 @@ body {
 }
 #placa-popup.show { opacity: 1; }
 #side-panel {
-  position: fixed; top: 0; right: -820px; width: 800px; height: 100vh;
+  position: fixed; top: 0; right: 0; width: 800px; max-width: calc(100vw - 20px); height: 100vh;
   z-index: 200; background: rgba(8,8,14,0.92); backdrop-filter: blur(20px);
   border-left: 1px solid rgba(255,255,255,0.06);
-  transition: right 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-  overflow-y: auto;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow-y: auto; transform: translateX(calc(100% + 20px));
 }
+#side-panel.open { transform: translateX(0); }
 #side-panel.open { right: 0; }
 #side-panel .close {
   position: absolute; top: 16px; left: 16px;
@@ -247,13 +248,13 @@ body {
 #side-panel .place { font-size: 16px; color: rgba(255,255,255,0.8); margin-bottom: 18px; line-height: 1.4; }
 #side-panel .divider { height: 1px; background: rgba(255,255,255,0.06); margin: 14px 0; }
 #side-panel .field {
-  display: flex; justify-content: space-between;
+  display: flex; justify-content: space-between; gap: 8px;
   padding: 5px 0; font-size: 14px;
   border-bottom: 1px solid rgba(255,255,255,0.03);
 }
 #side-panel .field:last-child { border-bottom: none; }
-#side-panel .field .label { color: rgba(255,255,255,0.55); }
-#side-panel .field .value { color: #e0e0e0; font-weight: 500; text-align: right; }
+#side-panel .field .label { color: rgba(255,255,255,0.55); flex-shrink: 0; }
+#side-panel .field .value { color: #e0e0e0; font-weight: 500; text-align: right; word-break: break-word; margin-left: auto; }
 #side-panel .field .value.highlight { color: #00f3ff; }
 #side-panel .btn-link {
   display: block; margin-top: 18px; text-align: center;
@@ -366,7 +367,8 @@ body {
   border-top: 1px solid rgba(255,255,255,0.04); line-height: 1.5;
 }
 @media (max-width: 768px) {
-  #side-panel { width: 100vw; right: -100vw; }
+  #side-panel { width: 100vw; max-width: 100vw; transform: translateX(100vw); }
+  #side-panel.open { transform: translateX(0); }
   #logo { top: 12px; left: 12px; }
   #logo-icon { width: 40px; height: 40px; }
   #logo-icon .ring-1 { width: 40px; height: 40px; }
