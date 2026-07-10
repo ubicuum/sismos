@@ -402,9 +402,30 @@ body {
   #glosario { display: none; }
   #glosario-popup { display: none; }
 }
+html:not([data-modules]) #no-modules { display: flex; }
+#no-modules {
+  display: none;
+  position: fixed; inset: 0; z-index: 9999;
+  background: #08080e;
+  flex-direction: column; align-items: center; justify-content: center;
+  padding: 40px; text-align: center;
+}
+#no-modules h1 {
+  font-family: 'Orbitron', monospace; font-size: 24px; color: #00f3ff; letter-spacing: 6px; margin-bottom: 16px;
+}
+#no-modules p {
+  font-family: 'Inter', sans-serif; font-size: 14px; color: #8899aa; max-width: 500px; line-height: 1.6;
+}
+#no-modules a { color: #00f3ff; }
 </style>
 </head>
 <body>
+
+<div id="no-modules">
+  <h1>GEOSISM</h1>
+  <p>Tu navegador no soporta <b>ES Modules</b> o <b>Import Maps</b>, necesarios para esta aplicación.</p>
+  <p>Actualiza a la última versión de <a href="https://www.mozilla.org/firefox/new/" target="_blank">Firefox</a>, <a href="https://www.google.com/chrome/" target="_blank">Chrome</a>, o <a href="https://www.apple.com/safari/" target="_blank">Safari</a>.</p>
+</div>
 
 <div id="globe-container"></div>
 
@@ -515,6 +536,12 @@ body {
 </div>
 <div id="glosario-popup"></div>
 
+<script>document.documentElement.dataset.modules='ok';
+setTimeout(function(){
+  if(document.documentElement.dataset.modules!=='ready'){
+    document.documentElement.removeAttribute('data-modules');
+  }
+},3000);</script>
 <script type="importmap">
 {
   "imports": {
@@ -524,6 +551,7 @@ body {
 }
 </script>
 <script type="module">
+document.documentElement.dataset.modules='ready';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
