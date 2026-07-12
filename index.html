@@ -53,7 +53,7 @@ body {
   height: 100vh;
 }
 #filtros {
-  position: fixed; top: 175px; left: 28px; bottom: 28px; z-index: 100;
+  position: fixed; top: 130px; left: 28px; bottom: 28px; z-index: 100;
   display: flex; flex-direction: column; gap: 6px;
   pointer-events: none; user-select: none; width: 220px;
   background: rgba(8,8,14,0.7);
@@ -211,6 +211,41 @@ body {
   pointer-events: none; opacity: 0; transition: opacity 0.3s;
 }
 #placa-popup.show { opacity: 1; }
+#ultimo-popup {
+  position: fixed; bottom: 155px; left: 50%; transform: translateX(-50%); z-index: 101;
+  width: min(480px, calc(100vw - 40px));
+  background: rgba(8,8,14,0.85); backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(0,243,255,0.12); border-radius: 10px;
+  padding: 0; overflow: hidden;
+  opacity: 0; visibility: hidden;
+  transition: opacity 0.3s, visibility 0.3s, transform 0.3s;
+  transform: translateX(-50%) translateY(10px);
+}
+#ultimo-popup.show { opacity: 1; visibility: visible; transform: translateX(-50%) translateY(0); }
+#ultimo-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 14px;
+  background: rgba(0,243,255,0.06);
+  border-bottom: 1px solid rgba(0,243,255,0.08);
+  font-family: 'Orbitron', monospace; font-size: 11px; font-weight: 600;
+  letter-spacing: 3px; color: #00f3ff;
+}
+#ultimo-close {
+  width: 28px; height: 28px; border: none; border-radius: 50%;
+  background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.5);
+  font-size: 16px; cursor: pointer; display: flex;
+  align-items: center; justify-content: center;
+}
+#ultimo-close:hover { background: rgba(255,255,255,0.1); color: #fff; }
+#ultimo-body {
+  padding: 10px 14px 12px;
+  font-family: 'Inter', sans-serif; font-size: 12px;
+  color: rgba(220,220,220,0.85); line-height: 1.5;
+}
+#ultimo-body .u-mag { font-size: 28px; font-weight: 800; line-height: 1.2; }
+#ultimo-body .u-place { font-size: 13px; color: rgba(255,255,255,0.7); margin-top: 2px; }
+#ultimo-body .u-meta { font-size: 11px; color: rgba(255,255,255,0.4); margin-top: 4px; display: flex; gap: 16px; flex-wrap: wrap; }
 #side-panel {
   position: fixed; top: 0; right: 0; width: 800px; max-width: calc(100vw - 20px); height: 100vh;
   z-index: 200; background: rgba(8,8,14,0.92); backdrop-filter: blur(20px);
@@ -267,7 +302,7 @@ body {
 #side-panel::-webkit-scrollbar-track { background: transparent; }
 #side-panel::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
 #glosario {
-  position: fixed; top: 175px; right: 28px; bottom: 28px; z-index: 100;
+  position: fixed; top: 130px; right: 28px; bottom: 28px; z-index: 100;
   width: 220px; display: flex; flex-direction: column; gap: 2px;
   background: rgba(8,8,14,0.7);
   background-image:
@@ -400,6 +435,7 @@ body {
   #info-texto { display: none; }
   #glosario { display: none; }
   #glosario-popup { display: none; }
+  #ultimo-popup { bottom: 125px; width: calc(100vw - 20px); }
 }
 @media (min-width: 991px) and (max-width: 1200px) {
   #glosario { width: 180px; font-size: 10px; }
@@ -486,6 +522,14 @@ html:not([data-modules]) #no-modules { display: flex; }
     <p><b>Capas de Placas Tectónicas:</b> Activa la vista de las fallas y placas tectónicas mundiales para entender el porqué de los sismos y observar cómo la actividad encaja perfectamente con las fronteras invisibles de nuestro planeta.</p>
     <p><b>Una ventana a la ciencia de la Tierra:</b> Ya seas un apasionado de la geología, un estudiante o simplemente alguien curioso, nuestra web te ofrece una experiencia visual e informativa sin precedentes.</p>
   </div>
+</div>
+
+<div id="ultimo-popup">
+  <div id="ultimo-header">
+    <span>ÚLTIMO SISMO</span>
+    <button id="ultimo-close">&times;</button>
+  </div>
+  <div id="ultimo-body"></div>
 </div>
 
 <div id="map-layers">
@@ -1296,6 +1340,26 @@ async function loadAll() {
   });
   buildQuakes(points);
   updateStats();
+  // Último sismo popup
+  if (allData.length > 0) {
+    var latest = allData[0];
+    var latestId = latest.properties.code || latest.properties.time || '';
+    var dismissed = document.getElementById('ultimo-popup').dataset.dismissed;
+    if (latestId !== dismissed) {
+      var p = latest.properties, c = latest.geometry.coordinates;
+      var mag = p.mag || 0, lng = c[0], lat = c[1], depth = c[2] || 0;
+      var color = p.tsunami === 1 ? '#ff0033' : getStyle(mag);
+      document.getElementById('ultimo-body').innerHTML =
+        '<div class="u-mag" style="color:' + color + '">M ' + mag.toFixed(1) + '</div>' +
+        '<div class="u-place">' + (p.place || 'Desconocido') + '</div>' +
+        '<div class="u-meta">' +
+          '<span>' + lat.toFixed(2) + ', ' + lng.toFixed(2) + '</span>' +
+          '<span>Prof. ' + depth.toFixed(0) + ' km</span>' +
+          '<span>' + fmtUTC(p.time) + '</span>' +
+        '</div>';
+      document.getElementById('ultimo-popup').classList.add('show');
+    }
+  }
 }
 
 function updateStats() {
@@ -1352,6 +1416,12 @@ async function showPanel(f) {
 
 document.getElementById('panel-close').addEventListener('click', function() {
   document.getElementById('side-panel').classList.remove('open');
+});
+document.getElementById('ultimo-close').addEventListener('click', function() {
+  var popup = document.getElementById('ultimo-popup');
+  var latest = allData[0];
+  if (latest) popup.dataset.dismissed = latest.properties.code || latest.properties.time || '';
+  popup.classList.remove('show');
 });
 document.getElementById('side-panel').addEventListener('click', function(e) {
   if (e.target === document.getElementById('side-panel')) {
