@@ -1349,14 +1349,22 @@ async function loadAll() {
       var p = latest.properties, c = latest.geometry.coordinates;
       var mag = p.mag || 0, lng = c[0], lat = c[1], depth = c[2] || 0;
       var color = p.tsunami === 1 ? '#ff0033' : getStyle(mag);
+      var uLat = lat.toFixed(2), uLng = lng.toFixed(2);
+      var uKey = uLat + ',' + uLng;
+      if (!geoCache[uKey]) { geoCache[uKey] = '—'; reverseGeo(lat, lng).then(function(c){ geoCache[uKey] = c; }); }
       document.getElementById('ultimo-body').innerHTML =
         '<div class="u-mag" style="color:' + color + '">M ' + mag.toFixed(1) + '</div>' +
         '<div class="u-place">' + (p.place || 'Desconocido') + '</div>' +
         '<div class="u-meta">' +
-          '<span>' + lat.toFixed(2) + ', ' + lng.toFixed(2) + '</span>' +
-          '<span>Prof. ' + depth.toFixed(0) + ' km</span>' +
-          '<span>' + fmtUTC(p.time) + '</span>' +
-        '</div>';
+          '<span><b>Lat:</b> ' + uLat + '</span>' +
+          '<span><b>Lon:</b> ' + uLng + '</span>' +
+          '<span><b>Prof:</b> ' + depth.toFixed(0) + ' km</span>' +
+        '</div>' +
+        '<div class="u-meta">' +
+          '<span><b>UTC:</b> ' + fmtUTC(p.time) + '</span>' +
+          '<span><b>Local:</b> ' + fmtLocal(p.time) + '</span>' +
+        '</div>' +
+        '<div class="u-meta"><span><b>Referencia:</b> ' + geoCache[uKey] + '</span></div>';
       document.getElementById('ultimo-popup').classList.add('show');
     }
   }
