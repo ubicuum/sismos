@@ -177,7 +177,7 @@ body {
 #map-layers {
   position: fixed; bottom: 72px; left: 50%; transform: translateX(-50%); z-index: 100;
   display: flex; gap: 2px;
-  background: rgba(8,8,14,0.6); backdrop-filter: blur(10px);
+  background: rgba(8,8,14,0.7);
   border: 1px solid rgba(255,255,255,0.04); border-radius: 8px;
   padding: 4px;
 }
@@ -192,7 +192,7 @@ body {
 #leyenda {
   position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%); z-index: 100;
   display: flex; gap: 18px; align-items: center;
-  background: rgba(8,8,14,0.6); backdrop-filter: blur(10px);
+  background: rgba(8,8,14,0.7);
   border: 1px solid rgba(255,255,255,0.04); border-radius: 8px;
   padding: 8px 18px; font-size: 11px;
 }
@@ -205,7 +205,7 @@ body {
 #placa-popup {
   position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); z-index: 99;
   max-width: 420px; padding: 12px 16px; border-radius: 8px;
-  background: rgba(8,8,14,0.3); backdrop-filter: blur(4px);
+  background: rgba(8,8,14,0.4);
   border: none;
   color: rgba(200,200,200,0.85); font-size: 11px; line-height: 1.5;
   pointer-events: none; opacity: 0; transition: opacity 0.3s;
@@ -410,6 +410,8 @@ body {
   #logo-icon .ring-2 { width: 30px; height: 30px; }
   #logo-icon .ring-3 { width: 20px; height: 20px; }
   #logo-text { font-size: 11px; letter-spacing: 4px; }
+  #depth-bars { display: none; }
+  #globe-container { width: 100%; }
 }
 @media (max-width: 990px) {
   #leyenda { bottom: 100px; padding: 6px 12px; gap: 6px; font-size: 9px; }
@@ -436,6 +438,7 @@ body {
   #glosario { display: none; }
   #glosario-popup { display: none; }
   #ultimo-popup { bottom: 125px; width: calc(100vw - 20px); }
+  #depth-bars { display: none; }
 }
 @media (min-width: 991px) and (max-width: 1200px) {
   #glosario { width: 180px; font-size: 10px; }
@@ -461,6 +464,60 @@ html:not([data-modules]) #no-modules { display: flex; }
   font-family: 'Inter', sans-serif; font-size: 14px; color: #8899aa; max-width: 500px; line-height: 1.6;
 }
 #no-modules a { color: #00f3ff; }
+#depth-bars {
+  position: fixed; top: 130px; left: 248px; bottom: 28px; z-index: 50;
+  width: 180px; overflow: hidden; pointer-events: none;
+  display: flex; flex-direction: column;
+}
+#depth-bars-title {
+  font-family: 'Inter', sans-serif; font-size: 9px; font-weight: 600;
+  color: rgba(0,243,255,0.5); text-align: left; letter-spacing: 2px;
+  padding: 0 0 6px 2px; flex-shrink: 0;
+  text-shadow: 0 0 8px rgba(0,0,0,0.95);
+  pointer-events: none;
+}
+#depth-bars-inner {
+  flex: 1; overflow-y: hidden; overflow-x: hidden;
+  display: flex; flex-direction: column; gap: 3px;
+  padding-right: 0;
+}
+.d-bar {
+  display: flex; align-items: center; gap: 4px;
+  flex-shrink: 0; height: 16px;
+}
+.d-surface-dot {
+  width: 3px; height: 3px; border-radius: 50%;
+  background: rgba(0,243,255,0.8); flex-shrink: 0;
+}
+.d-bar-inner {
+  height: 10px; position: relative;
+  background: rgba(0,243,255,0.12);
+  border: 1px solid rgba(0,243,255,0.15);
+  border-radius: 0 2px 2px 0;
+  min-width: 4px; max-width: 110px;
+  flex-shrink: 0;
+}
+.d-bar-inner::after {
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+  width: 2px; background: rgba(0,243,255,0.4);
+  animation: depthScanH 3s ease-in-out infinite;
+}
+@keyframes depthScanH {
+  0% { left: 0; opacity: 1; }
+  50% { opacity: 0.4; }
+  100% { left: 100%; opacity: 0; }
+}
+.d-depth-text {
+  font-family: 'Inter', sans-serif; font-size: 8px; font-weight: 600;
+  color: rgba(0,243,255,0.75); white-space: nowrap; flex-shrink: 0;
+  text-shadow: 0 0 4px rgba(0,0,0,0.95);
+}
+.d-place-text {
+  font-family: 'Inter', sans-serif; font-size: 7px; font-weight: 400;
+  color: rgba(0,243,255,0.35); white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis; flex-shrink: 1;
+  text-shadow: 0 0 4px rgba(0,0,0,0.95);
+}
 </style>
 </head>
 <body>
@@ -531,6 +588,8 @@ html:not([data-modules]) #no-modules { display: flex; }
   </div>
   <div id="ultimo-body"></div>
 </div>
+
+<div id="depth-bars"><div id="depth-bars-title">PROFUNDIDAD DEL SISMO 24 HRS</div><div id="depth-bars-inner"></div></div>
 
 <div id="map-layers">
   <div class="layer-btn active" data-layer="satellite">Satélite</div>
@@ -623,6 +682,20 @@ var getStyle = function(mag) {
   if (mag >= 3) return '#ffee00';
   return '#00ff66';
 };
+// Material pool for quake markers (avoids ~1000+ allocations per cycle)
+var _glowMats = {}, _fillMats = {}, _csnMat;
+function getGlowMat(hex) {
+  if (!_glowMats[hex]) _glowMats[hex] = new THREE.MeshBasicMaterial({ color: hex, side: THREE.DoubleSide, transparent: true, opacity: 0.12, depthWrite: false, depthTest: true });
+  return _glowMats[hex];
+}
+function getFillMat(hex) {
+  if (!_fillMats[hex]) _fillMats[hex] = new THREE.MeshBasicMaterial({ color: hex, side: THREE.DoubleSide, depthWrite: true, depthTest: true });
+  return _fillMats[hex];
+}
+function getCsnMat() {
+  if (!_csnMat) _csnMat = new THREE.MeshBasicMaterial({ color: 0xfbbf24, side: THREE.DoubleSide, depthWrite: true, depthTest: true });
+  return _csnMat;
+}
 
 // Scene
 var scene = new THREE.Scene();
@@ -655,7 +728,7 @@ controls.dampingFactor = 0.2;
 controls.rotateSpeed = 1.0;
 controls.minDistance = 140;
 controls.maxDistance = 500;
-controls.target.set(0, 0, 0);
+controls.target.set(-22, 0, 0);
 // Touch devices: more damping to avoid overspin
 if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
   controls.dampingFactor = 0.35;
@@ -1136,11 +1209,9 @@ scene.add(quakeGroup);
 var quakeData = [];
 
 function buildQuakes(points) {
-  while (quakeGroup.children.length) {
-    var c = quakeGroup.children[0];
-    if (c.material) c.material.dispose();
-    quakeGroup.remove(c);
-  }
+  // O(1) cleanup per child — pop from end instead of shift from front
+  var kids = quakeGroup.children;
+  while (kids.length) quakeGroup.remove(kids.pop());
   quakeData = points;
 
   for (var i = 0; i < points.length; i++) {
@@ -1153,12 +1224,8 @@ function buildQuakes(points) {
     var s = 0.25 + mag * 0.12;
     var hex = getHex(mag);
 
-    // Neon glow halo (larger, semi-transparent)
-    var glowMat = new THREE.MeshBasicMaterial({
-      color: hex, side: THREE.DoubleSide, transparent: true, opacity: 0.12,
-      depthWrite: false, depthTest: true,
-    });
-    var glow = new THREE.Mesh(_circleGeo, glowMat);
+    // Neon glow halo (larger, semi-transparent) — pooled
+    var glow = new THREE.Mesh(_circleGeo, getGlowMat(hex));
     glow.position.copy(pos);
     _alignQ.setFromUnitVectors(_zAxis, norm);
     glow.quaternion.copy(_alignQ);
@@ -1166,11 +1233,8 @@ function buildQuakes(points) {
     glow.renderOrder = 0;
     quakeGroup.add(glow);
 
-    // Color fill circle (by magnitude — neon)
-    var fillMat = new THREE.MeshBasicMaterial({
-      color: hex, side: THREE.DoubleSide, depthWrite: true, depthTest: true,
-    });
-    var fill = new THREE.Mesh(_circleGeo, fillMat);
+    // Color fill circle — pooled
+    var fill = new THREE.Mesh(_circleGeo, getFillMat(hex));
     fill.position.copy(pos);
     _alignQ.setFromUnitVectors(_zAxis, norm);
     fill.quaternion.copy(_alignQ);
@@ -1180,12 +1244,9 @@ function buildQuakes(points) {
     fill.renderOrder = 1;
     quakeGroup.add(fill);
 
-    // CSN golden ring
+    // CSN golden ring — pooled
     if (isCSN) {
-      var csnMat = new THREE.MeshBasicMaterial({
-        color: 0xfbbf24, side: THREE.DoubleSide, depthWrite: true, depthTest: true,
-      });
-      var csnM = new THREE.Mesh(_circleGeo, csnMat);
+      var csnM = new THREE.Mesh(_circleGeo, getCsnMat());
       csnM.position.copy(pos);
       _alignQ.setFromUnitVectors(_zAxis, norm);
       csnM.quaternion.copy(_alignQ);
@@ -1228,30 +1289,31 @@ window.addEventListener('resize', function() {
 });
 
 var _camDir = new THREE.Vector3();
+var _cullFrame = 0;
 function animate() {
   requestAnimationFrame(animate);
   controls.update();
 
   _camDir.copy(camera.position).normalize();
-  for (var i = 0; i < cityLabels.length; i++) {
-    var lbl = cityLabels[i];
-    var vis = lbl.userData.normal.dot(_camDir);
-    lbl.visible = vis > -0.1;
-  }
-  for (var i = 0; i < countryLabels.length; i++) {
-    var lbl = countryLabels[i];
-    var vis = lbl.userData.normal.dot(_camDir);
-    lbl.visible = vis > -0.1;
-  }
-  for (var i = 0; i < plateLabels.length; i++) {
-    var lbl = plateLabels[i];
-    var vis = lbl.userData.normal.dot(_camDir);
-    lbl.visible = vis > -0.1;
-  }
-  for (var i = 0; i < quakeGroup.children.length; i++) {
-    var q = quakeGroup.children[i];
-    if (q.userData.normal) {
-      q.visible = q.userData.normal.dot(_camDir) > -0.1;
+  // Run visibility culling every 10 frames (auto-rotate is slow, imperceptible skip)
+  if (_cullFrame++ % 10 === 0) {
+    for (var i = 0; i < cityLabels.length; i++) {
+      var lbl = cityLabels[i];
+      lbl.visible = lbl.userData.normal.dot(_camDir) > -0.1;
+    }
+    for (var i = 0; i < countryLabels.length; i++) {
+      var lbl = countryLabels[i];
+      lbl.visible = lbl.userData.normal.dot(_camDir) > -0.1;
+    }
+    for (var i = 0; i < plateLabels.length; i++) {
+      var lbl = plateLabels[i];
+      lbl.visible = lbl.userData.normal.dot(_camDir) > -0.1;
+    }
+    for (var i = 0; i < quakeGroup.children.length; i++) {
+      var q = quakeGroup.children[i];
+      if (q.userData.normal) {
+        q.visible = q.userData.normal.dot(_camDir) > -0.1;
+      }
     }
   }
 
@@ -1311,26 +1373,41 @@ function fetchCSN(signal) {
     .catch(function() { return []; });
 }
 
+var _lastDataHash = '';
+
 async function loadAll() {
   abortCtrl.abort();
   abortCtrl = new AbortController();
   var signal = abortCtrl.signal;
   var results = await Promise.all([fetchUSGS(signal), fetchCSN(signal)]);
   var usgsEvents = results[0], csnEvents = results[1];
-  // Filter CSN by minMag
   csnEvents = csnEvents.filter(function(e) { return (e.properties.mag || 0) >= minMag; });
   var merged = usgsEvents.slice();
-  for (var i = 0; i < csnEvents.length; i++) {
-    var ce = csnEvents[i];
-    var dup = merged.some(function(m) {
-      var d = Math.abs(m.geometry.coordinates[0] - ce.geometry.coordinates[0]) +
-               Math.abs(m.geometry.coordinates[1] - ce.geometry.coordinates[1]);
-      return d < 0.5 && Math.abs((m.properties.time || 0) - (ce.properties.time || 0)) < 600000;
-    });
-    if (!dup) merged.push(ce);
-  }
+  // Hash-based dedup (O(n+m) instead of O(n*m))
+  var dedupSet = {};
+  merged.forEach(function(m) {
+    var key = Math.round(m.geometry.coordinates[0] * 2) + '_' +
+              Math.round(m.geometry.coordinates[1] * 2) + '_' +
+              Math.round((m.properties.time || 0) / 600000);
+    dedupSet[key] = true;
+  });
+  csnEvents.forEach(function(ce) {
+    var key = Math.round(ce.geometry.coordinates[0] * 2) + '_' +
+              Math.round(ce.geometry.coordinates[1] * 2) + '_' +
+              Math.round((ce.properties.time || 0) / 600000);
+    if (!dedupSet[key]) merged.push(ce);
+  });
   merged.sort(function(a, b) { return (b.properties.time || 0) - (a.properties.time || 0); });
+
+  // Skip rebuild if data unchanged (compare first event ID + count)
+  var dataHash = merged.length + '_' + (merged[0] ? (merged[0].id || merged[0].properties.code || '') : '');
+  if (dataHash === _lastDataHash) {
+    allData = merged;
+    return;
+  }
+  _lastDataHash = dataHash;
   allData = merged;
+
   var points = merged.map(function(f) {
     var p = f.properties;
     var c = f.geometry.coordinates;
@@ -1377,10 +1454,49 @@ async function loadAll() {
 }
 
 function updateStats() {
-  document.getElementById('s-count').textContent = allData.length;
-  var maxM = allData.reduce(function(mx, f) { return Math.max(mx, f.properties.mag || 0); }, 0);
+  var count = allData.length;
+  var maxM = 0;
+  var tsuCount = 0;
+  var now = Date.now();
+  var dayAgo = now - 86400000;
+  var recent = [];
+  for (var i = 0; i < allData.length; i++) {
+    var f = allData[i];
+    var p = f.properties;
+    var mag = p.mag || 0;
+    if (mag > maxM) maxM = mag;
+    if ((p.tsunami || 0) === 1) tsuCount++;
+    if (p.time >= dayAgo) recent.push(f);
+  }
+  document.getElementById('s-count').textContent = count;
   document.getElementById('s-max').textContent = maxM > 0 ? maxM.toFixed(1) : '—';
-  document.getElementById('s-tsu').textContent = allData.filter(function(f) { return (f.properties.tsunami || 0) === 1; }).length;
+  document.getElementById('s-tsu').textContent = tsuCount;
+  buildDepthBars(recent);
+}
+
+// Depth bars (last 24h)
+var MAX_BAR_W = 110;
+function buildDepthBars(recent) {
+  recent.sort(function(a,b) { return (b.properties.mag||0) - (a.properties.mag||0); });
+  recent = recent.slice(0, 40);
+
+  var container = document.getElementById('depth-bars-inner');
+  var html = '';
+  for (var i = 0; i < recent.length; i++) {
+    var f = recent[i];
+    var p = f.properties;
+    var c = f.geometry.coordinates;
+    var depth = c[2] || 0;
+    var w = Math.min(Math.max(depth / 200 * MAX_BAR_W, 4), MAX_BAR_W);
+    var place = (p.place || '').replace(/^.*of /, '').substring(0, 12);
+    var dLabel = depth.toFixed(0) + 'k';
+    html += '<div class="d-bar" title="M' + (p.mag||0).toFixed(1) + ' ' + (p.place||'') + ' ' + depth.toFixed(0) + 'km">' +
+      '<div class="d-surface-dot"></div>' +
+      '<div class="d-bar-inner" style="width:' + w + 'px"></div>' +
+      '<span class="d-depth-text">' + dLabel + '</span>' +
+      '<span class="d-place-text">' + place + '</span></div>';
+  }
+  container.innerHTML = html || '<div style="color:rgba(0,243,255,0.2);font-size:10px;padding:6px;font-family:Inter,sans-serif;">Esperando datos...</div>';
 }
 
 var geoCache = {};
